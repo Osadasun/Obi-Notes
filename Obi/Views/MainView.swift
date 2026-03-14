@@ -17,20 +17,41 @@ struct MainView: View {
             ZStack(alignment: .bottomTrailing) {
                 // メインコンテンツ
                 VStack(spacing: 0) {
-                    // カスタムヘッダー
-                    HeaderSwitcher(selectedFeed: $selectedFeed)
+                    // ヘッダー（横並びタブ + プロフィール）
+                    HStack(spacing: 0) {
+                        // 横並びタブ
+                        HorizontalTabBar(selectedFeed: $selectedFeed)
+
+                        Spacer()
+
+                        // プロフィールボタン
+                        NavigationLink(destination: ProfileView()) {
+                            Circle()
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(width: 32, height: 32)
+                                .overlay(
+                                    Image(systemName: "person.fill")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                )
+                        }
+                        .padding(.trailing, 16)
+                    }
+                    .padding(.top, 8)
+                    .padding(.bottom, 8)
+                    .background(Color(UIColor.systemBackground))
 
                     Divider()
 
-                    // コンテンツ
-                    Group {
-                        switch selectedFeed {
-                        case .home:
-                            HomeView()
-                        case .obi:
-                            ObiView()
-                        }
+                    // スワイプ可能なコンテンツ
+                    TabView(selection: $selectedFeed) {
+                        HomeView()
+                            .tag(Feed.home)
+
+                        ObiView()
+                            .tag(Feed.obi)
                     }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
                 }
 
                 // フローティングアクションボタン
@@ -73,60 +94,42 @@ enum Feed: String, CaseIterable {
     case obi = "Obi"
 }
 
-// MARK: - Header Switcher
-struct HeaderSwitcher: View {
+// MARK: - Horizontal Tab Bar
+struct HorizontalTabBar: View {
     @Binding var selectedFeed: Feed
-    @State private var showDropdown = false
+    @Namespace private var animation
 
     var body: some View {
-        HStack(spacing: 16) {
-            // 左側: 切り替えメニュー
-            Menu {
-                ForEach(Feed.allCases, id: \.self) { feed in
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedFeed = feed
-                        }
-                    }) {
-                        HStack {
-                            Text(feed.rawValue)
-                            if selectedFeed == feed {
-                                Image(systemName: "checkmark")
-                            }
+        HStack(spacing: 32) {
+            ForEach(Feed.allCases, id: \.self) { feed in
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        selectedFeed = feed
+                    }
+                }) {
+                    VStack(spacing: 8) {
+                        Text(feed.rawValue)
+                            .font(.title2)
+                            .fontWeight(selectedFeed == feed ? .bold : .regular)
+                            .foregroundColor(selectedFeed == feed ? .primary : .secondary)
+
+                        // アンダーライン
+                        if selectedFeed == feed {
+                            Rectangle()
+                                .fill(Color.purple)
+                                .frame(height: 3)
+                                .matchedGeometryEffect(id: "underline", in: animation)
+                        } else {
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(height: 3)
                         }
                     }
                 }
-            } label: {
-                HStack(spacing: 4) {
-                    Text(selectedFeed.rawValue)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-
-                    Image(systemName: "chevron.down")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            Spacer()
-
-            // 右側: プロフィールボタン
-            NavigationLink(destination: ProfileView()) {
-                Circle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 32, height: 32)
-                    .overlay(
-                        Image(systemName: "person.fill")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                    )
+                .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color(UIColor.systemBackground))
     }
 }
 
