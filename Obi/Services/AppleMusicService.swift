@@ -31,11 +31,38 @@ class AppleMusicService {
             throw MusicError.notAuthorized
         }
 
-        // TODO: Apple Music API検索実装
-        // MusicKit APIを使用してアルバムと楽曲を検索
+        var request = MusicCatalogSearchRequest(term: query, types: [MusicKit.Album.self, MusicKit.Song.self])
+        request.limit = 25
 
-        // 仮実装
-        return MusicSearchResult(albums: [], tracks: [])
+        let response = try await request.response()
+
+        // アルバムを変換
+        let albums = response.albums.map { musicKitAlbum -> Album in
+            Album(
+                id: musicKitAlbum.id.rawValue,
+                title: musicKitAlbum.title,
+                artist: musicKitAlbum.artistName,
+                artworkURL: musicKitAlbum.artwork?.url(width: 600, height: 600)?.absoluteString,
+                releaseDate: musicKitAlbum.releaseDate,
+                genre: musicKitAlbum.genreNames.first,
+                trackCount: musicKitAlbum.trackCount
+            )
+        }
+
+        // 楽曲を変換
+        let tracks = response.songs.map { musicKitSong -> Track in
+            Track(
+                id: musicKitSong.id.rawValue,
+                title: musicKitSong.title,
+                artist: musicKitSong.artistName,
+                albumTitle: musicKitSong.albumTitle,
+                artworkURL: musicKitSong.artwork?.url(width: 600, height: 600)?.absoluteString,
+                duration: musicKitSong.duration.map { Int($0 * 1000) },
+                trackNumber: musicKitSong.trackNumber
+            )
+        }
+
+        return MusicSearchResult(albums: albums, tracks: tracks)
     }
 
     func searchAlbums(query: String, limit: Int = 25) async throws -> [Album] {
@@ -43,8 +70,22 @@ class AppleMusicService {
             throw MusicError.notAuthorized
         }
 
-        // TODO: アルバム検索実装
-        return []
+        var request = MusicCatalogSearchRequest(term: query, types: [MusicKit.Album.self])
+        request.limit = limit
+
+        let response = try await request.response()
+
+        return response.albums.map { musicKitAlbum in
+            Album(
+                id: musicKitAlbum.id.rawValue,
+                title: musicKitAlbum.title,
+                artist: musicKitAlbum.artistName,
+                artworkURL: musicKitAlbum.artwork?.url(width: 600, height: 600)?.absoluteString,
+                releaseDate: musicKitAlbum.releaseDate,
+                genre: musicKitAlbum.genreNames.first,
+                trackCount: musicKitAlbum.trackCount
+            )
+        }
     }
 
     func searchTracks(query: String, limit: Int = 25) async throws -> [Track] {
@@ -52,8 +93,22 @@ class AppleMusicService {
             throw MusicError.notAuthorized
         }
 
-        // TODO: 楽曲検索実装
-        return []
+        var request = MusicCatalogSearchRequest(term: query, types: [MusicKit.Song.self])
+        request.limit = limit
+
+        let response = try await request.response()
+
+        return response.songs.map { musicKitSong in
+            Track(
+                id: musicKitSong.id.rawValue,
+                title: musicKitSong.title,
+                artist: musicKitSong.artistName,
+                albumTitle: musicKitSong.albumTitle,
+                artworkURL: musicKitSong.artwork?.url(width: 600, height: 600)?.absoluteString,
+                duration: musicKitSong.duration.map { Int($0 * 1000) },
+                trackNumber: musicKitSong.trackNumber
+            )
+        }
     }
 
     // MARK: - Fetch Details
@@ -63,8 +118,28 @@ class AppleMusicService {
             throw MusicError.notAuthorized
         }
 
-        // TODO: アルバム詳細取得実装
-        throw MusicError.notFound
+        guard let musicItemID = MusicItemID(id) else {
+            throw MusicError.notFound
+        }
+
+        var request = MusicCatalogResourceRequest<MusicKit.Album>(matching: \.id, equalTo: musicItemID)
+        request.properties = [.artistName, .artwork, .releaseDate, .genreNames, .trackCount]
+
+        let response = try await request.response()
+
+        guard let musicKitAlbum = response.items.first else {
+            throw MusicError.notFound
+        }
+
+        return Album(
+            id: musicKitAlbum.id.rawValue,
+            title: musicKitAlbum.title,
+            artist: musicKitAlbum.artistName,
+            artworkURL: musicKitAlbum.artwork?.url(width: 600, height: 600)?.absoluteString,
+            releaseDate: musicKitAlbum.releaseDate,
+            genre: musicKitAlbum.genreNames.first,
+            trackCount: musicKitAlbum.trackCount
+        )
     }
 
     func fetchTrack(id: String) async throws -> Track {
@@ -72,8 +147,28 @@ class AppleMusicService {
             throw MusicError.notAuthorized
         }
 
-        // TODO: 楽曲詳細取得実装
-        throw MusicError.notFound
+        guard let musicItemID = MusicItemID(id) else {
+            throw MusicError.notFound
+        }
+
+        var request = MusicCatalogResourceRequest<MusicKit.Song>(matching: \.id, equalTo: musicItemID)
+        request.properties = [.artistName, .artwork, .albumTitle, .duration, .trackNumber]
+
+        let response = try await request.response()
+
+        guard let musicKitSong = response.items.first else {
+            throw MusicError.notFound
+        }
+
+        return Track(
+            id: musicKitSong.id.rawValue,
+            title: musicKitSong.title,
+            artist: musicKitSong.artistName,
+            albumTitle: musicKitSong.albumTitle,
+            artworkURL: musicKitSong.artwork?.url(width: 600, height: 600)?.absoluteString,
+            duration: musicKitSong.duration.map { Int($0 * 1000) },
+            trackNumber: musicKitSong.trackNumber
+        )
     }
 }
 
