@@ -97,34 +97,19 @@ enum Feed: String, CaseIterable {
 // MARK: - Horizontal Tab Bar
 struct HorizontalTabBar: View {
     @Binding var selectedFeed: Feed
-    @Namespace private var animation
 
     var body: some View {
-        HStack(spacing: 32) {
+        HStack(spacing: 24) {
             ForEach(Feed.allCases, id: \.self) { feed in
                 Button(action: {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
                         selectedFeed = feed
                     }
                 }) {
-                    VStack(spacing: 8) {
-                        Text(feed.rawValue)
-                            .font(.title2)
-                            .fontWeight(selectedFeed == feed ? .bold : .regular)
-                            .foregroundColor(selectedFeed == feed ? .primary : .secondary)
-
-                        // アンダーライン
-                        if selectedFeed == feed {
-                            Rectangle()
-                                .fill(Color.purple)
-                                .frame(height: 3)
-                                .matchedGeometryEffect(id: "underline", in: animation)
-                        } else {
-                            Rectangle()
-                                .fill(Color.clear)
-                                .frame(height: 3)
-                        }
-                    }
+                    Text(feed.rawValue)
+                        .font(.title)
+                        .fontWeight(selectedFeed == feed ? .bold : .regular)
+                        .foregroundColor(selectedFeed == feed ? .primary : .secondary)
                 }
                 .buttonStyle(.plain)
             }
