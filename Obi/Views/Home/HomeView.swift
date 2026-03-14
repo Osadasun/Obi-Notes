@@ -12,37 +12,45 @@ struct HomeView: View {
     // @StateObject private var viewModel = HomeViewModel()
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // 最新のレビューセクション
-                    SectionHeaderView(title: "最新のレビュー", showMore: true)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // 最新のレビューセクション
+                SectionHeaderView(title: "最新のレビュー", showMore: true)
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        LazyHGrid(rows: gridRows, spacing: 12) {
-                            ForEach(0..<9) { index in
-                                AlbumCardPlaceholder()
-                            }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHGrid(rows: gridRows, spacing: 12) {
+                        ForEach(0..<9) { index in
+                            AlbumCardPlaceholder()
                         }
-                        .padding(.horizontal)
                     }
-
-                    // 今週の人気アルバムセクション
-                    SectionHeaderView(title: "今週の人気アルバム", showMore: true)
-
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        LazyHGrid(rows: gridRows, spacing: 12) {
-                            ForEach(0..<9) { index in
-                                AlbumCardPlaceholder()
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
+                    .padding(.horizontal)
                 }
-                .padding(.vertical)
+
+                // 今週の人気アルバムセクション
+                SectionHeaderView(title: "今週の人気アルバム", showMore: true)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHGrid(rows: gridRows, spacing: 12) {
+                        ForEach(0..<9) { index in
+                            AlbumCardPlaceholder()
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+
+                // 話題のレビュアーセクション
+                SectionHeaderView(title: "話題のレビュアー", showMore: true)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        ForEach(0..<5) { index in
+                            ReviewerCard()
+                        }
+                    }
+                    .padding(.horizontal)
+                }
             }
-            .navigationTitle("Obi Notes")
-            .navigationBarTitleDisplayMode(.large)
+            .padding(.vertical, 16)
         }
     }
 
@@ -95,6 +103,30 @@ struct AlbumCardPlaceholder: View {
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
+    }
+}
+
+// MARK: - Reviewer Card
+struct ReviewerCard: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            Circle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 60, height: 60)
+                .overlay(
+                    Image(systemName: "person.fill")
+                        .foregroundColor(.gray)
+                )
+
+            Text("@username")
+                .font(.caption)
+                .fontWeight(.medium)
+
+            Text("85件")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(width: 80)
     }
 }
 
