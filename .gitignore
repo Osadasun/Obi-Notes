@@ -30,3 +30,15 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots
 fastlane/test_output
+
+# Sensitive Configuration Files
+# Obi/Config/SupabaseConfig.swift
+# Obi/Config/AppleMusicConfig.swift
+
+# Environment Variables
+.env
+*.xcconfig
+
+# API Keys and Secrets
+*.p8
+*.pem
