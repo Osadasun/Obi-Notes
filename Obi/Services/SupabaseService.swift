@@ -6,18 +6,14 @@
 //
 
 import Foundation
-// TODO: Supabase Swift SDKを追加後、以下のコメントを外してください
-// import Supabase
+import Supabase
 
 class SupabaseService {
     static let shared = SupabaseService()
 
-    // TODO: Supabase Swift SDKを追加後、以下のコメントを外してください
-    // let client: SupabaseClient
+    let client: SupabaseClient
 
     private init() {
-        // TODO: Supabase Swift SDKを追加後、以下のコメントを外してください
-        /*
         guard SupabaseConfig.isConfigured else {
             fatalError("Supabase is not configured. Please set URL and API key in SupabaseConfig.swift")
         }
@@ -26,96 +22,194 @@ class SupabaseService {
             supabaseURL: URL(string: SupabaseConfig.url)!,
             supabaseKey: SupabaseConfig.anonKey
         )
-        */
+    }
+
+    // MARK: - Current User
+
+    var currentUser: Supabase.User? {
+        return try? client.auth.session.user
+    }
+
+    var currentUserId: UUID? {
+        return currentUser?.id
     }
 
     // MARK: - Authentication
 
-    func signInWithApple() async throws {
-        // TODO: Apple Sign In実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+    func signInWithApple(idToken: String, nonce: String) async throws {
+        try await client.auth.signInWithIdToken(
+            credentials: .init(
+                provider: .apple,
+                idToken: idToken,
+                nonce: nonce
+            )
+        )
     }
 
-    func signInWithGoogle() async throws {
-        // TODO: Google Sign In実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+    func signInWithGoogle(idToken: String, accessToken: String) async throws {
+        try await client.auth.signInWithIdToken(
+            credentials: .init(
+                provider: .google,
+                idToken: idToken,
+                accessToken: accessToken
+            )
+        )
     }
 
     func signOut() async throws {
-        // TODO: Sign out実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        try await client.auth.signOut()
     }
 
     // MARK: - User Profile
 
     func fetchUser(id: UUID) async throws -> User {
-        // TODO: ユーザー情報取得実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        let response: User = try await client.database
+            .from("profiles")
+            .select()
+            .eq("id", value: id.uuidString)
+            .single()
+            .execute()
+            .value
+        return response
     }
 
     func updateUserProfile(_ user: User) async throws {
-        // TODO: プロフィール更新実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        try await client.database
+            .from("profiles")
+            .update(user)
+            .eq("id", value: user.id.uuidString)
+            .execute()
     }
 
     // MARK: - Reviews
 
     func fetchReviews(limit: Int = 20, offset: Int = 0) async throws -> [Review] {
-        // TODO: レビュー取得実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        let response: [Review] = try await client.database
+            .from("reviews")
+            .select()
+            .eq("is_public", value: true)
+            .order("created_at", ascending: false)
+            .limit(limit)
+            .range(from: offset, to: offset + limit - 1)
+            .execute()
+            .value
+        return response
     }
 
     func fetchReviewsWithUsers(limit: Int = 20, offset: Int = 0) async throws -> [ReviewWithUser] {
-        // TODO: ユーザー情報付きレビュー取得実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        // Supabaseでは、JOINの代わりに2回のクエリで実装
+        let reviews = try await fetchReviews(limit: limit, offset: offset)
+
+        var reviewsWithUsers: [ReviewWithUser] = []
+        for review in reviews {
+            if let user = try? await fetchUser(id: review.userId) {
+                reviewsWithUsers.append(ReviewWithUser(review: review, user: user))
+            }
+        }
+
+        return reviewsWithUsers
     }
 
     func createReview(_ review: Review) async throws -> Review {
-        // TODO: レビュー作成実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        let response: Review = try await client.database
+            .from("reviews")
+            .insert(review)
+            .select()
+            .single()
+            .execute()
+            .value
+        return response
     }
 
     func updateReview(_ review: Review) async throws {
-        // TODO: レビュー更新実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        try await client.database
+            .from("reviews")
+            .update(review)
+            .eq("id", value: review.id.uuidString)
+            .execute()
     }
 
     func deleteReview(id: UUID) async throws {
-        // TODO: レビュー削除実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        try await client.database
+            .from("reviews")
+            .delete()
+            .eq("id", value: id.uuidString)
+            .execute()
     }
 
     // MARK: - Lists
 
     func fetchUserLists(userId: UUID) async throws -> [MusicList] {
-        // TODO: ユーザーのリスト取得実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        let response: [MusicList] = try await client.database
+            .from("lists")
+            .select()
+            .eq("user_id", value: userId.uuidString)
+            .order("created_at", ascending: false)
+            .execute()
+            .value
+        return response
     }
 
     func createList(_ list: MusicList) async throws -> MusicList {
-        // TODO: リスト作成実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        let response: MusicList = try await client.database
+            .from("lists")
+            .insert(list)
+            .select()
+            .single()
+            .execute()
+            .value
+        return response
     }
 
     func addItemToList(listId: UUID, item: ListItem) async throws {
-        // TODO: リストにアイテム追加実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        try await client.database
+            .from("list_items")
+            .insert(item)
+            .execute()
     }
 
     func removeItemFromList(itemId: UUID) async throws {
-        // TODO: リストからアイテム削除実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        try await client.database
+            .from("list_items")
+            .delete()
+            .eq("id", value: itemId.uuidString)
+            .execute()
+    }
+
+    func fetchListItems(listId: UUID) async throws -> [ListItem] {
+        let response: [ListItem] = try await client.database
+            .from("list_items")
+            .select()
+            .eq("list_id", value: listId.uuidString)
+            .order("added_at", ascending: false)
+            .execute()
+            .value
+        return response
     }
 
     // MARK: - Statistics
 
     func fetchAlbumStats(targetId: String) async throws -> AlbumStats {
-        // TODO: アルバム統計取得実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        // ビューから取得
+        let response: AlbumStats = try await client.database
+            .from("album_stats")
+            .select()
+            .eq("target_id", value: targetId)
+            .single()
+            .execute()
+            .value
+        return response
     }
 
     func fetchUserStats(userId: UUID) async throws -> UserStats {
-        // TODO: ユーザー統計取得実装
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not implemented yet"])
+        // ビューから取得
+        let response: UserStats = try await client.database
+            .from("user_stats")
+            .select()
+            .eq("user_id", value: userId.uuidString)
+            .single()
+            .execute()
+            .value
+        return response
     }
 }
