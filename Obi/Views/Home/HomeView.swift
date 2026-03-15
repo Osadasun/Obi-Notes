@@ -13,33 +13,6 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                // デバッグ情報表示
-                VStack(spacing: 8) {
-                    if viewModel.isLoading {
-                        Text("🔄 データ読み込み中...")
-                            .font(.caption)
-                    } else {
-                        Text("📊 レビュー: \(viewModel.latestReviews.count)件")
-                            .font(.caption)
-                        Text("🎵 人気アルバム: \(viewModel.popularAlbums.count)件")
-                            .font(.caption)
-                    }
-
-                    if let errorMessage = viewModel.errorMessage {
-                        Text("⚠️ エラー")
-                            .font(.headline)
-                            .foregroundColor(.red)
-                        Text(errorMessage)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                }
-                .padding()
-                .background(Color.blue.opacity(0.1))
-                .cornerRadius(8)
-                .padding(.horizontal)
-
                 // 最新のレビューセクション
                 SectionHeaderView(title: "最新のレビュー", showMore: true)
 
@@ -94,10 +67,14 @@ struct HomeView: View {
                     .padding(.horizontal)
                 }
             }
-            .padding(.vertical, 16)
+            .padding(.top, 16)
         }
-        .task {
-            await viewModel.loadData()
+        .onAppear {
+            if viewModel.latestReviews.isEmpty && viewModel.popularAlbums.isEmpty {
+                Task {
+                    await viewModel.loadData()
+                }
+            }
         }
     }
 

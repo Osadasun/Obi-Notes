@@ -12,6 +12,13 @@ struct MainView: View {
     @State private var showSearch = false
     @State private var showCreateReview = false
 
+    // UIPageViewControllerの内部余白を計算
+    private func calculateBottomPadding(safeAreaBottom: CGFloat) -> CGFloat {
+        // ホームボタンありデバイス: safe area bottom = 0, padding = -50
+        // ホームボタンなしデバイス: safe area bottom = 34, padding = -(34 + 16) = -50
+        return safeAreaBottom > 0 ? -(safeAreaBottom + 16) : -50
+    }
+
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottomTrailing) {
@@ -43,16 +50,21 @@ struct MainView: View {
 
                     Divider()
 
-                    // スワイプ可能なコンテンツ
-                    TabView(selection: $selectedFeed) {
-                        HomeView()
-                            .tag(Feed.home)
+                    // TabView ページャー
+                    GeometryReader { geometry in
+                        TabView(selection: $selectedFeed) {
+                            HomeView()
+                                .tag(Feed.home)
 
-                        ObiView()
-                            .tag(Feed.obi)
+                            ObiView()
+                                .tag(Feed.obi)
+                        }
+                        .tabViewStyle(.page(indexDisplayMode: .never))
+                        .ignoresSafeArea(.all)
+                        .padding(.bottom, calculateBottomPadding(safeAreaBottom: geometry.safeAreaInsets.bottom))
                     }
-                    .tabViewStyle(.page(indexDisplayMode: .never))
                 }
+                .ignoresSafeArea(.all, edges: .bottom)
 
                 // フローティングアクションボタン
                 VStack(spacing: 16) {
