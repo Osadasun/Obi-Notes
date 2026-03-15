@@ -16,7 +16,24 @@ class AppleMusicService {
     // MARK: - Authorization
 
     func requestAuthorization() async -> Bool {
+        print("🎵 Requesting MusicKit authorization...")
         let status = await MusicAuthorization.request()
+        print("🎵 Authorization status: \(status)")
+
+        // 追加情報をログ
+        switch status {
+        case .authorized:
+            print("✅ MusicKit authorized successfully")
+        case .denied:
+            print("❌ MusicKit authorization denied")
+        case .notDetermined:
+            print("⚠️ MusicKit authorization not determined")
+        case .restricted:
+            print("🚫 MusicKit authorization restricted")
+        @unknown default:
+            print("❓ Unknown MusicKit authorization status")
+        }
+
         return status == .authorized
     }
 
@@ -34,7 +51,23 @@ class AppleMusicService {
         var request = MusicCatalogSearchRequest(term: query, types: [MusicKit.Album.self, MusicKit.Song.self])
         request.limit = 25
 
-        let response = try await request.response()
+        // デバッグ用ログ
+        print("🔍 Searching for: \(query)")
+        print("🔑 Authorization status: \(MusicAuthorization.currentStatus)")
+
+        let response: MusicCatalogSearchResponse
+        do {
+            response = try await request.response()
+            print("✅ Search successful, albums: \(response.albums.count), songs: \(response.songs.count)")
+        } catch {
+            print("❌ Search failed with error: \(error)")
+            print("❌ Error localizedDescription: \(error.localizedDescription)")
+            if let nsError = error as NSError? {
+                print("❌ NSError domain: \(nsError.domain), code: \(nsError.code)")
+                print("❌ NSError userInfo: \(nsError.userInfo)")
+            }
+            throw error
+        }
 
         // アルバムを変換
         let albums = response.albums.map { musicKitAlbum -> Album in
@@ -111,6 +144,59 @@ class AppleMusicService {
         }
     }
 
+    // MARK: - Popular Albums
+
+    func fetchPopularAlbums(limit: Int = 9) async throws -> [Album] {
+        guard isAuthorized else {
+            throw MusicError.notAuthorized
+        }
+
+        // 人気の検索キーワードを使用してアルバムを取得
+        // 複数のジャンルや人気アーティストで検索して多様性を確保
+        let searchTerms = ["top hits 2024", "new releases", "popular music"]
+        var allAlbums: [Album] = []
+
+        for term in searchTerms {
+            var request = MusicCatalogSearchRequest(term: term, types: [MusicKit.Album.self])
+            request.limit = limit / searchTerms.count + 1
+
+            do {
+                let response = try await request.response()
+                let albums = response.albums.map { musicKitAlbum in
+                    Album(
+                        id: musicKitAlbum.id.rawValue,
+                        title: musicKitAlbum.title,
+                        artist: musicKitAlbum.artistName,
+                        artworkURL: musicKitAlbum.artwork?.url(width: 600, height: 600)?.absoluteString,
+                        releaseDate: musicKitAlbum.releaseDate,
+                        genre: musicKitAlbum.genreNames.first,
+                        trackCount: musicKitAlbum.trackCount
+                    )
+                }
+                allAlbums.append(contentsOf: albums)
+            } catch {
+                print("⚠️ 検索エラー (\(term)): \(error)")
+            }
+        }
+
+        // 重複を削除してlimitまで返す
+        var uniqueAlbums: [Album] = []
+        var seenIds = Set<String>()
+
+        for album in allAlbums {
+            if !seenIds.contains(album.id) {
+                uniqueAlbums.append(album)
+                seenIds.insert(album.id)
+                if uniqueAlbums.count >= limit {
+                    break
+                }
+            }
+        }
+
+        print("✅ 人気アルバム取得成功: \(uniqueAlbums.count)件")
+        return uniqueAlbums
+    }
+
     // MARK: - Fetch Details
 
     func fetchAlbum(id: String) async throws -> Album {
@@ -118,12 +204,9 @@ class AppleMusicService {
             throw MusicError.notAuthorized
         }
 
-        guard let musicItemID = MusicItemID(id) else {
-            throw MusicError.notFound
-        }
+        let musicItemID = MusicItemID(id)
 
-        var request = MusicCatalogResourceRequest<MusicKit.Album>(matching: \.id, equalTo: musicItemID)
-        request.properties = [.artistName, .artwork, .releaseDate, .genreNames, .trackCount]
+        let request = MusicCatalogResourceRequest<MusicKit.Album>(matching: \.id, equalTo: musicItemID)
 
         let response = try await request.response()
 
@@ -147,12 +230,9 @@ class AppleMusicService {
             throw MusicError.notAuthorized
         }
 
-        guard let musicItemID = MusicItemID(id) else {
-            throw MusicError.notFound
-        }
+        let musicItemID = MusicItemID(id)
 
-        var request = MusicCatalogResourceRequest<MusicKit.Song>(matching: \.id, equalTo: musicItemID)
-        request.properties = [.artistName, .artwork, .albumTitle, .duration, .trackNumber]
+        let request = MusicCatalogResourceRequest<MusicKit.Song>(matching: \.id, equalTo: musicItemID)
 
         let response = try await request.response()
 

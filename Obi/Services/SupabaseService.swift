@@ -11,32 +11,44 @@ import Supabase
 class SupabaseService {
     static let shared = SupabaseService()
 
-    let client: SupabaseClient
+    let client: SupabaseClient?
+    var isConfigured: Bool {
+        client != nil
+    }
 
     private init() {
-        guard SupabaseConfig.isConfigured else {
-            fatalError("Supabase is not configured. Please set URL and API key in SupabaseConfig.swift")
+        if SupabaseConfig.isConfigured {
+            self.client = SupabaseClient(
+                supabaseURL: URL(string: SupabaseConfig.url)!,
+                supabaseKey: SupabaseConfig.anonKey
+            )
+        } else {
+            self.client = nil
+            print("⚠️ Supabase is not configured. Please set URL and API key in SupabaseConfig.swift")
         }
-
-        self.client = SupabaseClient(
-            supabaseURL: URL(string: SupabaseConfig.url)!,
-            supabaseKey: SupabaseConfig.anonKey
-        )
     }
 
     // MARK: - Current User
 
     var currentUser: Supabase.User? {
-        return try? client.auth.session.user
+        get async {
+            guard let client = client else { return nil }
+            return try? await client.auth.session.user
+        }
     }
 
     var currentUserId: UUID? {
-        return currentUser?.id
+        get async {
+            return await currentUser?.id
+        }
     }
 
     // MARK: - Authentication
 
     func signInWithApple(idToken: String, nonce: String) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         try await client.auth.signInWithIdToken(
             credentials: .init(
                 provider: .apple,
@@ -47,6 +59,9 @@ class SupabaseService {
     }
 
     func signInWithGoogle(idToken: String, accessToken: String) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         try await client.auth.signInWithIdToken(
             credentials: .init(
                 provider: .google,
@@ -57,12 +72,18 @@ class SupabaseService {
     }
 
     func signOut() async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         try await client.auth.signOut()
     }
 
     // MARK: - User Profile
 
     func fetchUser(id: UUID) async throws -> User {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         let response: User = try await client.database
             .from("profiles")
             .select()
@@ -74,6 +95,9 @@ class SupabaseService {
     }
 
     func updateUserProfile(_ user: User) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         try await client.database
             .from("profiles")
             .update(user)
@@ -84,19 +108,35 @@ class SupabaseService {
     // MARK: - Reviews
 
     func fetchReviews(limit: Int = 20, offset: Int = 0) async throws -> [Review] {
-        let response: [Review] = try await client.database
-            .from("reviews")
-            .select()
-            .eq("is_public", value: true)
-            .order("created_at", ascending: false)
-            .limit(limit)
-            .range(from: offset, to: offset + limit - 1)
-            .execute()
-            .value
-        return response
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        do {
+            let response: [Review] = try await client.database
+                .from("reviews")
+                .select()
+                .eq("is_public", value: true)
+                .order("created_at", ascending: false)
+                .limit(limit)
+                .range(from: offset, to: offset + limit - 1)
+                .execute()
+                .value
+            print("✅ fetchReviews成功: \(response.count)件")
+            if let first = response.first {
+                print("📝 最初のレビュー: id=\(first.id), title=\(first.title), artist=\(first.artist)")
+            }
+            return response
+        } catch {
+            print("❌ fetchReviewsエラー: \(error)")
+            throw error
+        }
     }
 
     func fetchReviewsWithUsers(limit: Int = 20, offset: Int = 0) async throws -> [ReviewWithUser] {
+        guard client != nil else {
+            throw SupabaseError.notConfigured
+        }
         // Supabaseでは、JOINの代わりに2回のクエリで実装
         let reviews = try await fetchReviews(limit: limit, offset: offset)
 
@@ -111,6 +151,9 @@ class SupabaseService {
     }
 
     func createReview(_ review: Review) async throws -> Review {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         let response: Review = try await client.database
             .from("reviews")
             .insert(review)
@@ -122,6 +165,9 @@ class SupabaseService {
     }
 
     func updateReview(_ review: Review) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         try await client.database
             .from("reviews")
             .update(review)
@@ -130,6 +176,9 @@ class SupabaseService {
     }
 
     func deleteReview(id: UUID) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         try await client.database
             .from("reviews")
             .delete()
@@ -137,9 +186,52 @@ class SupabaseService {
             .execute()
     }
 
+    func updateReviewArtwork(reviewId: UUID, artworkURL: String) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        struct ArtworkUpdate: Codable {
+            let target_artwork_url: String
+        }
+
+        let update = ArtworkUpdate(target_artwork_url: artworkURL)
+
+        try await client.database
+            .from("reviews")
+            .update(update)
+            .eq("id", value: reviewId.uuidString)
+            .execute()
+
+        print("✅ アートワークURL更新成功: reviewId=\(reviewId)")
+    }
+
+    func updateAllReviewsArtwork(targetId: String, artworkURL: String) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        struct ArtworkUpdate: Codable {
+            let target_artwork_url: String
+        }
+
+        let update = ArtworkUpdate(target_artwork_url: artworkURL)
+
+        try await client.database
+            .from("reviews")
+            .update(update)
+            .eq("target_id", value: targetId)
+            .execute()
+
+        print("✅ アートワークURL一括更新成功: targetId=\(targetId)")
+    }
+
     // MARK: - Lists
 
     func fetchUserLists(userId: UUID) async throws -> [MusicList] {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         let response: [MusicList] = try await client.database
             .from("lists")
             .select()
@@ -151,6 +243,9 @@ class SupabaseService {
     }
 
     func createList(_ list: MusicList) async throws -> MusicList {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         let response: MusicList = try await client.database
             .from("lists")
             .insert(list)
@@ -162,6 +257,9 @@ class SupabaseService {
     }
 
     func addItemToList(listId: UUID, item: ListItem) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         try await client.database
             .from("list_items")
             .insert(item)
@@ -169,6 +267,9 @@ class SupabaseService {
     }
 
     func removeItemFromList(itemId: UUID) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         try await client.database
             .from("list_items")
             .delete()
@@ -177,6 +278,9 @@ class SupabaseService {
     }
 
     func fetchListItems(listId: UUID) async throws -> [ListItem] {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         let response: [ListItem] = try await client.database
             .from("list_items")
             .select()
@@ -190,6 +294,9 @@ class SupabaseService {
     // MARK: - Statistics
 
     func fetchAlbumStats(targetId: String) async throws -> AlbumStats {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         // ビューから取得
         let response: AlbumStats = try await client.database
             .from("album_stats")
@@ -201,7 +308,35 @@ class SupabaseService {
         return response
     }
 
+    func fetchPopularAlbums(limit: Int = 9) async throws -> [AlbumStats] {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        do {
+            // レビュー数が多い順に取得
+            let response: [AlbumStats] = try await client.database
+                .from("album_stats")
+                .select()
+                .order("review_count", ascending: false)
+                .limit(limit)
+                .execute()
+                .value
+            print("✅ fetchPopularAlbums成功: \(response.count)件")
+            if let first = response.first {
+                print("📊 最初の人気アルバム: title=\(first.title), artist=\(first.artist), reviewCount=\(first.reviewCount)")
+            }
+            return response
+        } catch {
+            print("❌ fetchPopularAlbumsエラー: \(error)")
+            throw error
+        }
+    }
+
     func fetchUserStats(userId: UUID) async throws -> UserStats {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
         // ビューから取得
         let response: UserStats = try await client.database
             .from("user_stats")
@@ -211,5 +346,17 @@ class SupabaseService {
             .execute()
             .value
         return response
+    }
+}
+
+// MARK: - Supabase Error
+enum SupabaseError: LocalizedError {
+    case notConfigured
+
+    var errorDescription: String? {
+        switch self {
+        case .notConfigured:
+            return "Supabaseが設定されていません"
+        }
     }
 }

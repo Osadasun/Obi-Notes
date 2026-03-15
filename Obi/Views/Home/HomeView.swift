@@ -8,19 +8,56 @@
 import SwiftUI
 
 struct HomeView: View {
-    // TODO: ViewModelを追加
-    // @StateObject private var viewModel = HomeViewModel()
+    @StateObject private var viewModel = HomeViewModel()
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                // デバッグ情報表示
+                VStack(spacing: 8) {
+                    if viewModel.isLoading {
+                        Text("🔄 データ読み込み中...")
+                            .font(.caption)
+                    } else {
+                        Text("📊 レビュー: \(viewModel.latestReviews.count)件")
+                            .font(.caption)
+                        Text("🎵 人気アルバム: \(viewModel.popularAlbums.count)件")
+                            .font(.caption)
+                    }
+
+                    if let errorMessage = viewModel.errorMessage {
+                        Text("⚠️ エラー")
+                            .font(.headline)
+                            .foregroundColor(.red)
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+                .padding()
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(8)
+                .padding(.horizontal)
+
                 // 最新のレビューセクション
                 SectionHeaderView(title: "最新のレビュー", showMore: true)
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHGrid(rows: gridRows, spacing: 12) {
-                        ForEach(0..<9) { index in
-                            AlbumCardPlaceholder()
+                if viewModel.isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                } else if viewModel.latestReviews.isEmpty {
+                    VStack(spacing: 12) {
+                        ForEach(0..<3) { index in
+                            ReviewCardPlaceholder()
+                        }
+                    }
+                    .padding(.horizontal)
+                } else {
+                    VStack(spacing: 12) {
+                        ForEach(viewModel.latestReviews) { reviewWithUser in
+                            ReviewCard(reviewWithUser: reviewWithUser)
                         }
                     }
                     .padding(.horizontal)
@@ -29,10 +66,17 @@ struct HomeView: View {
                 // 今週の人気アルバムセクション
                 SectionHeaderView(title: "今週の人気アルバム", showMore: true)
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHGrid(rows: gridRows, spacing: 12) {
+                if viewModel.popularAlbums.isEmpty {
+                    LazyVGrid(columns: gridColumns, spacing: 16) {
                         ForEach(0..<9) { index in
-                            AlbumCardPlaceholder()
+                            PopularAlbumCard(album: nil)
+                        }
+                    }
+                    .padding(.horizontal)
+                } else {
+                    LazyVGrid(columns: gridColumns, spacing: 16) {
+                        ForEach(viewModel.popularAlbums, id: \.id) { album in
+                            PopularAlbumCard(album: album)
                         }
                     }
                     .padding(.horizontal)
@@ -52,11 +96,14 @@ struct HomeView: View {
             }
             .padding(.vertical, 16)
         }
+        .task {
+            await viewModel.loadData()
+        }
     }
 
-    // 3行のグリッド
-    private var gridRows: [GridItem] {
-        Array(repeating: GridItem(.fixed(110), spacing: 12), count: 3)
+    // 3列のグリッド
+    private var gridColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
     }
 }
 
@@ -87,22 +134,187 @@ struct SectionHeaderView: View {
     }
 }
 
-// MARK: - Album Card Placeholder
-struct AlbumCardPlaceholder: View {
+// MARK: - Review Card (レコード帯風)
+struct ReviewCard: View {
+    let reviewWithUser: ReviewWithUser
+
     var body: some View {
-        VStack(spacing: 4) {
+        NavigationLink(destination: AlbumDetailView(album: Album(
+            id: reviewWithUser.review.targetId,
+            title: reviewWithUser.review.title,
+            artist: reviewWithUser.review.artist,
+            artworkURL: reviewWithUser.review.albumArt,
+            releaseDate: nil,
+            genre: nil,
+            trackCount: nil
+        ))) {
+            VStack(alignment: .leading, spacing: 8) {
+                // 横長サムネイル（レビュー文表示）
+                ZStack(alignment: .bottomLeading) {
+                    Group {
+                        let imageURL = reviewWithUser.review.albumArt.flatMap { URL(string: $0) }
+
+                        AsyncImage(url: imageURL) { phase in
+                            switch phase {
+                            case .empty:
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.2))
+                                    .overlay(
+                                        ProgressView()
+                                    )
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            case .failure:
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.2))
+                                    .overlay(
+                                        Image(systemName: "music.note")
+                                            .foregroundColor(.gray)
+                                    )
+                            @unknown default:
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.2))
+                            }
+                        }
+                        .frame(height: 120)
+                        .frame(maxWidth: .infinity)
+                        .clipped()
+                    }
+
+                    // レビュー文（帯部分）
+                    if let reviewText = reviewWithUser.review.text {
+                        Text(reviewText)
+                            .font(.caption)
+                            .foregroundColor(.white)
+                            .lineLimit(2)
+                            .padding(8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color.black.opacity(0.7), Color.clear],
+                                    startPoint: .bottom,
+                                    endPoint: .top
+                                )
+                            )
+                    }
+                }
+                .cornerRadius(8)
+
+                // 評価とユーザー名
+                HStack {
+                    // 評価（左寄せ）
+                    HStack(spacing: 2) {
+                        ForEach(0..<5) { index in
+                            Image(systemName: index < Int(reviewWithUser.review.rating) ? "star.fill" : "star")
+                                .font(.caption2)
+                                .foregroundColor(.yellow)
+                        }
+                    }
+
+                    Spacer()
+
+                    // ユーザー名（右寄せ）
+                    Text("@\(reviewWithUser.user.displayName)")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Review Card Placeholder
+struct ReviewCardPlaceholder: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Wide rectangular thumbnail placeholder
             RoundedRectangle(cornerRadius: 8)
                 .fill(Color.gray.opacity(0.2))
-                .frame(width: 100, height: 100)
+                .frame(height: 120)
+                .frame(maxWidth: .infinity)
+                .overlay(
+                    VStack(alignment: .leading, spacing: 4) {
+                        Spacer()
+                        // Placeholder for review text
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(height: 12)
+                            .padding(.horizontal, 8)
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 200, height: 12)
+                            .padding(.horizontal, 8)
+                            .padding(.bottom, 8)
+                    }
+                )
 
-            Text("★★★★★")
-                .font(.caption2)
-                .foregroundColor(.orange)
+            // Rating and username placeholder
+            HStack {
+                // Stars placeholder (left)
+                HStack(spacing: 2) {
+                    ForEach(0..<5) { _ in
+                        Image(systemName: "star.fill")
+                            .font(.caption2)
+                            .foregroundColor(.gray.opacity(0.3))
+                    }
+                }
 
-            Text("@user")
-                .font(.caption2)
-                .foregroundColor(.secondary)
+                Spacer()
+
+                // Username placeholder (right)
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 80, height: 12)
+            }
         }
+    }
+}
+
+// MARK: - Popular Album Card
+struct PopularAlbumCard: View {
+    let album: Album?
+
+    var body: some View {
+        NavigationLink(destination: album.map { AlbumDetailView(album: $0) }) {
+            VStack(alignment: .leading, spacing: 6) {
+                // アルバムアートワーク
+                if let album = album, let artworkURL = album.artworkURL, let url = URL(string: artworkURL) {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(1, contentMode: .fill)
+                    } placeholder: {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+                            .aspectRatio(1, contentMode: .fit)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                } else {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.gray.opacity(0.2))
+                        .aspectRatio(1, contentMode: .fit)
+                        .overlay(
+                            Image(systemName: "music.note")
+                                .foregroundColor(.gray)
+                        )
+                }
+
+                Text(album?.title ?? "アルバム名")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+
+                Text(album?.artist ?? "アーティスト名")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -131,5 +343,7 @@ struct ReviewerCard: View {
 }
 
 #Preview {
-    HomeView()
+    NavigationStack {
+        HomeView()
+    }
 }

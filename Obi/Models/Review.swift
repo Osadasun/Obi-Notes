@@ -14,7 +14,6 @@ struct Review: Identifiable, Codable {
     let targetId: String // Apple Music ID
     var rating: Double // 0.5 ~ 5.0
     var text: String?
-    var listenedDate: Date
     var isPublic: Bool
     let createdAt: Date
     var updatedAt: Date
@@ -30,14 +29,13 @@ struct Review: Identifiable, Codable {
         case targetType = "target_type"
         case targetId = "target_id"
         case rating
-        case text
-        case listenedDate = "listened_date"
+        case text = "review_text"
         case isPublic = "is_public"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
-        case albumArt = "album_art"
-        case title
-        case artist
+        case albumArt = "target_artwork_url"
+        case title = "target_title"
+        case artist = "target_artist"
     }
 }
 
@@ -58,6 +56,7 @@ struct ReviewWithUser: Identifiable {
 // MARK: - Album Statistics
 struct AlbumStats: Codable {
     let targetId: String
+    let targetType: String
     let title: String
     let artist: String
     let albumArt: String?
@@ -66,10 +65,11 @@ struct AlbumStats: Codable {
 
     enum CodingKeys: String, CodingKey {
         case targetId = "target_id"
+        case targetType = "target_type"
         case title
         case artist
         case albumArt = "album_art"
-        case avgRating = "avg_rating"
+        case avgRating = "average_rating"
         case reviewCount = "review_count"
     }
 }

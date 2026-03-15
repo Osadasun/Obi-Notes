@@ -103,7 +103,9 @@ struct SearchView: View {
             if !viewModel.albums.isEmpty {
                 Section("アルバム (\(viewModel.albums.count))") {
                     ForEach(viewModel.albums) { album in
-                        AlbumRow(album: album)
+                        NavigationLink(destination: AlbumDetailView(album: album)) {
+                            AlbumRow(album: album)
+                        }
                     }
                 }
             }

@@ -17,37 +17,56 @@ class SearchViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var isAuthorized = false
 
-    private let musicService = AppleMusicService.shared
     private var searchTask: Task<Void, Never>?
 
     init() {
-        isAuthorized = musicService.isAuthorized
+        if AppConfig.useMockMusicService {
+            isAuthorized = MockMusicService.shared.isAuthorized
+            print("🎭 Using Mock Music Service")
+        } else {
+            isAuthorized = AppleMusicService.shared.isAuthorized
+            print("🎵 Using Apple Music Service")
+        }
     }
 
     // MARK: - Authorization
 
     func requestAuthorization() async {
-        isAuthorized = await musicService.requestAuthorization()
+        if AppConfig.useMockMusicService {
+            isAuthorized = await MockMusicService.shared.requestAuthorization()
+        } else {
+            isAuthorized = await AppleMusicService.shared.requestAuthorization()
+        }
     }
 
     // MARK: - Search
 
     func search() {
+        print("🎯 Search function called with text: '\(searchText)'")
+
         // 既存の検索をキャンセル
         searchTask?.cancel()
 
         guard !searchText.isEmpty else {
+            print("⚠️ Search text is empty, returning")
             albums = []
             tracks = []
             return
         }
 
+        print("✅ Starting search task...")
         searchTask = Task {
             isLoading = true
             errorMessage = nil
 
             do {
-                let result = try await musicService.searchMusic(query: searchText)
+                print("📞 Calling music service searchMusic...")
+                let result: MusicSearchResult
+                if AppConfig.useMockMusicService {
+                    result = try await MockMusicService.shared.searchMusic(query: searchText)
+                } else {
+                    result = try await AppleMusicService.shared.searchMusic(query: searchText)
+                }
 
                 // Taskがキャンセルされていないか確認
                 if !Task.isCancelled {
@@ -56,6 +75,8 @@ class SearchViewModel: ObservableObject {
                 }
             } catch {
                 if !Task.isCancelled {
+                    print("❌ Search error: \(error)")
+                    print("❌ Error description: \(error.localizedDescription)")
                     errorMessage = error.localizedDescription
                 }
             }
@@ -77,7 +98,12 @@ class SearchViewModel: ObservableObject {
             errorMessage = nil
 
             do {
-                let result = try await musicService.searchAlbums(query: searchText)
+                let result: [Album]
+                if AppConfig.useMockMusicService {
+                    result = try await MockMusicService.shared.searchAlbums(query: searchText)
+                } else {
+                    result = try await AppleMusicService.shared.searchAlbums(query: searchText)
+                }
 
                 if !Task.isCancelled {
                     albums = result
@@ -106,7 +132,12 @@ class SearchViewModel: ObservableObject {
             errorMessage = nil
 
             do {
-                let result = try await musicService.searchTracks(query: searchText)
+                let result: [Track]
+                if AppConfig.useMockMusicService {
+                    result = try await MockMusicService.shared.searchTracks(query: searchText)
+                } else {
+                    result = try await AppleMusicService.shared.searchTracks(query: searchText)
+                }
 
                 if !Task.isCancelled {
                     tracks = result

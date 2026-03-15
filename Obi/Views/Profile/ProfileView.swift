@@ -78,7 +78,7 @@ struct ProfileView: View {
                             GridItem(.flexible())
                         ], spacing: 12) {
                             ForEach(0..<12) { index in
-                                AlbumCardPlaceholder()
+                                PopularAlbumCard(album: nil)
                             }
                         }
                         .padding(.horizontal)
