@@ -47,8 +47,15 @@ struct AlbumDetailView: View {
             }
         }
         .sheet(isPresented: $showingReviewSheet) {
-            // TODO: レビュー作成画面
-            Text("レビュー作成画面（未実装）")
+            NavigationStack {
+                WriteReviewView(musicItem: MusicItem(
+                    id: viewModel.album.id,
+                    title: viewModel.album.title,
+                    artist: viewModel.album.artist,
+                    artworkURL: viewModel.album.artworkURL,
+                    type: .album
+                ))
+            }
         }
         .task {
             await viewModel.loadData()

@@ -8,7 +8,9 @@
 import SwiftUI
 
 struct ProfileView: View {
+    @ObservedObject var authViewModel: AuthenticationViewModel
     @State private var selectedSegment = 0
+    @State private var showSignOutAlert = false
 
     var body: some View {
         NavigationStack {
@@ -98,11 +100,21 @@ struct ProfileView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        // TODO: 設定画面
+                        showSignOutAlert = true
                     }) {
-                        Image(systemName: "gearshape")
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
                     }
                 }
+            }
+            .alert("サインアウト", isPresented: $showSignOutAlert) {
+                Button("キャンセル", role: .cancel) {}
+                Button("サインアウト", role: .destructive) {
+                    Task {
+                        await authViewModel.signOut()
+                    }
+                }
+            } message: {
+                Text("本当にサインアウトしますか？")
             }
         }
     }
@@ -159,5 +171,5 @@ struct ListCardPlaceholder: View {
 }
 
 #Preview {
-    ProfileView()
+    ProfileView(authViewModel: AuthenticationViewModel())
 }

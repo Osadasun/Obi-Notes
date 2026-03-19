@@ -7,6 +7,7 @@
 
 import Foundation
 import Supabase
+import Auth
 
 class SupabaseService {
     static let shared = SupabaseService()
@@ -94,6 +95,20 @@ class SupabaseService {
         return response
     }
 
+    func createUser(_ user: User) async throws -> User {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+        let response: User = try await client.database
+            .from("profiles")
+            .insert(user)
+            .select()
+            .single()
+            .execute()
+            .value
+        return response
+    }
+
     func updateUserProfile(_ user: User) async throws {
         guard let client = client else {
             throw SupabaseError.notConfigured
@@ -148,6 +163,28 @@ class SupabaseService {
         }
 
         return reviewsWithUsers
+    }
+
+    func fetchMyReviews(userId: UUID, limit: Int = 50) async throws -> [Review] {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        do {
+            let response: [Review] = try await client.database
+                .from("reviews")
+                .select()
+                .eq("user_id", value: userId.uuidString)
+                .order("created_at", ascending: false)
+                .limit(limit)
+                .execute()
+                .value
+            print("✅ fetchMyReviews成功: \(response.count)件")
+            return response
+        } catch {
+            print("❌ fetchMyReviewsエラー: \(error)")
+            throw error
+        }
     }
 
     func createReview(_ review: Review) async throws -> Review {

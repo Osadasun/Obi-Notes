@@ -9,6 +9,7 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
+    let bottomSpacerHeight: CGFloat
 
     var body: some View {
         ScrollView {
@@ -66,6 +67,10 @@ struct HomeView: View {
                     }
                     .padding(.horizontal)
                 }
+
+                // TabViewの下部拡張分のスペーサー
+                Color.clear
+                    .frame(height: bottomSpacerHeight)
             }
             .padding(.top, 16)
         }
@@ -321,6 +326,6 @@ struct ReviewerCard: View {
 
 #Preview {
     NavigationStack {
-        HomeView()
+        HomeView(bottomSpacerHeight: 50)
     }
 }
