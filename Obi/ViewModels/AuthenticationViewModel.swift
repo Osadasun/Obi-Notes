@@ -46,8 +46,28 @@ class AuthenticationViewModel: ObservableObject {
                     await createUserProfile(userId: user.id, email: user.email)
                 }
             } else {
-                print("ℹ️ セッションなし - サインインが必要")
-                isAuthenticated = false
+                // Supabaseセッションがない場合、開発モードのセッションをチェック
+                if let savedIdString = UserDefaults.standard.string(forKey: "DevModeUserId"),
+                   let deviceId = UUID(uuidString: savedIdString) {
+                    print("✅ 開発モードセッション検出: \(deviceId)")
+
+                    // プロフィールが存在するか確認
+                    do {
+                        _ = try await supabaseService.fetchUser(id: deviceId)
+                        let displayName = "Dev User (\(deviceId.uuidString.prefix(8)))"
+
+                        // UserManagerを更新
+                        UserManager.shared.setAuthenticatedUser(id: deviceId, displayName: displayName)
+                        isAuthenticated = true
+                        print("✅ 開発モードセッション復元成功")
+                    } catch {
+                        print("⚠️ 開発モードユーザーのプロフィールが見つかりません")
+                        isAuthenticated = false
+                    }
+                } else {
+                    print("ℹ️ セッションなし - サインインが必要")
+                    isAuthenticated = false
+                }
             }
 
             isLoading = false
