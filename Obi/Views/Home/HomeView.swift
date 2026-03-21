@@ -116,8 +116,8 @@ struct SectionHeaderView: View {
     }
 }
 
-// MARK: - Review Card (レコード帯風)
-struct ReviewCard: View {
+// MARK: - Obi Style Review Card (レコード帯風)
+struct ObiStyleReviewCard: View {
     let reviewWithUser: ReviewWithUser
 
     var body: some View {

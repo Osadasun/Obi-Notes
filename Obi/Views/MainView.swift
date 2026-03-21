@@ -71,7 +71,7 @@ struct MainView: View {
                     }
                     .padding(.top, 8)
                     .padding(.bottom, 8)
-                    .background(Color(UIColor.systemBackground))
+                    .background(.background)
 
                     Divider()
 
@@ -172,122 +172,168 @@ struct FloatingButton: View {
     }
 }
 
-// MARK: - Obi View (My Reviews)
+// MARK: - Obi View (Lists)
 struct ObiView: View {
     let bottomSpacerHeight: CGFloat
-    @StateObject private var viewModel = MyReviewsViewModel()
+    @StateObject private var viewModel = ObiListViewModel()
+    @State private var showCreateList = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("自分のレビュー")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                    .padding(.top)
+        ZStack(alignment: .bottomTrailing) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                    } else {
+                        // デフォルトリスト + カスタムリスト（統一された2列グリッド）
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], spacing: 20) {
+                            // デフォルトリスト
+                            ListCard(
+                                icon: "music.note.list",
+                                title: "レビュー済み",
+                                count: viewModel.reviewedCount,
+                                color: .purple,
+                                listType: .reviewed
+                            )
 
-                if viewModel.isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                } else if viewModel.reviews.isEmpty {
-                    ContentUnavailableView(
-                        "まだレビューがありません",
-                        systemImage: "text.bubble",
-                        description: Text("アルバムや楽曲を検索してレビューを書いてみよう")
-                    )
-                    .padding(.vertical, 40)
-                } else {
-                    ForEach(viewModel.reviews) { review in
-                        MyReviewCard(review: review)
-                            .padding(.horizontal)
+                            ListCard(
+                                icon: "heart.fill",
+                                title: "お気に入り",
+                                count: viewModel.favoriteCount,
+                                color: .pink,
+                                listType: .favorite
+                            )
+
+                            ListCard(
+                                icon: "headphones",
+                                title: "聴いた",
+                                count: viewModel.listenedCount,
+                                color: .blue,
+                                listType: .listened
+                            )
+
+                            ListCard(
+                                icon: "star.fill",
+                                title: "聴きたい",
+                                count: viewModel.wishlistCount,
+                                color: .orange,
+                                listType: .wishlist
+                            )
+
+                            // カスタムリスト
+                            ForEach(viewModel.customLists) { list in
+                                ListCard(
+                                    title: list.name,
+                                    count: viewModel.customListCounts[list.id] ?? 0,
+                                    customList: list
+                                )
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.top)
                     }
-                }
 
-                // TabViewの下部拡張分のスペーサー
-                Color.clear
-                    .frame(height: bottomSpacerHeight)
+                    // TabViewの下部拡張分のスペーサー
+                    Color.clear
+                        .frame(height: bottomSpacerHeight)
+                }
             }
+            .task {
+                await viewModel.loadListCounts()
+            }
+            .refreshable {
+                await viewModel.loadListCounts()
+            }
+
+            // フローティングアクションボタン（リスト作成）
+            FloatingButton(
+                icon: "plus",
+                backgroundColor: .white,
+                foregroundColor: .purple
+            ) {
+                showCreateList = true
+            }
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
         }
-        .task {
-            await viewModel.loadMyReviews()
-        }
-        .refreshable {
-            await viewModel.loadMyReviews()
+        .sheet(isPresented: $showCreateList) {
+            CreateListView()
         }
     }
 }
 
-// MARK: - My Review Card
+// MARK: - Custom List Detail View (Placeholder)
+struct CustomListDetailView: View {
+    let list: MusicList
+
+    var body: some View {
+        Text("カスタムリスト: \(list.name)")
+            .navigationTitle(list.name)
+    }
+}
+
+// MARK: - List Card
+struct ListCard: View {
+    let icon: String
+    let title: String
+    let count: Int
+    let color: Color
+    let destination: AnyView
+
+    init(icon: String, title: String, count: Int, color: Color, listType: MyListCategory) {
+        self.icon = icon
+        self.title = title
+        self.count = count
+        self.color = color
+        self.destination = AnyView(ListDetailView(listType: listType))
+    }
+
+    init(icon: String = "music.note.list", title: String, count: Int, color: Color = .purple, customList: MusicList) {
+        self.icon = icon
+        self.title = title
+        self.count = count
+        self.color = color
+        self.destination = AnyView(CustomListDetailView(list: customList))
+    }
+
+    var body: some View {
+        NavigationLink(destination: destination) {
+            VStack(spacing: 12) {
+                // アイコンエリア（正方形）
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.gray.opacity(0.1))
+                    .aspectRatio(1, contentMode: .fit)
+                    .overlay(
+                        Image(systemName: icon)
+                            .font(.system(size: 40))
+                            .foregroundColor(color)
+                    )
+
+                // タイトルと件数
+                VStack(spacing: 4) {
+                    Text(title)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+
+                    Text("\(count)件")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - My Review Card (共通コンポーネント使用)
 struct MyReviewCard: View {
     let review: Review
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                // アートワーク
-                if let artworkURL = review.albumArt, let url = URL(string: artworkURL) {
-                    AsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.2))
-                    }
-                    .frame(width: 60, height: 60)
-                    .cornerRadius(8)
-                } else {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(width: 60, height: 60)
-                        .cornerRadius(8)
-                        .overlay(
-                            Image(systemName: "music.note")
-                                .foregroundColor(.gray)
-                        )
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(review.title)
-                        .font(.headline)
-                        .lineLimit(1)
-
-                    Text(review.artist)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-
-                    HStack(spacing: 2) {
-                        ForEach(0..<5) { index in
-                            Image(systemName: index < Int(review.rating) ? "star.fill" : "star")
-                                .font(.caption)
-                                .foregroundColor(.yellow)
-                        }
-                        Text(String(format: "%.1f", review.rating))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.leading, 4)
-                    }
-                }
-
-                Spacer()
-            }
-
-            if let reviewText = review.text, !reviewText.isEmpty {
-                Text(reviewText)
-                    .font(.body)
-                    .lineLimit(3)
-            }
-
-            Text(review.createdAt.formatted(.relative(presentation: .named)))
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .padding()
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(12)
+        ReviewCard(review: review)
     }
 }
 
