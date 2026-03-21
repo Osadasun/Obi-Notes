@@ -21,10 +21,8 @@ struct AlbumDetailView: View {
                 // アルバムアート & 基本情報
                 albumHeader
 
-                // 統計情報
-                if viewModel.reviewCount > 0 {
-                    statsSection
-                }
+                // 評価 & +ボタン
+                ratingSection
 
                 // トラックリスト
                 if !viewModel.tracks.isEmpty {
@@ -36,16 +34,6 @@ struct AlbumDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    showingReviewSheet = true
-                }) {
-                    Image(systemName: "square.and.pencil")
-                        .font(.headline)
-                }
-            }
-        }
         .sheet(isPresented: $showingReviewSheet) {
             NavigationStack {
                 WriteReviewView(musicItem: MusicItem(
@@ -102,28 +90,10 @@ struct AlbumDetailView: View {
                     .font(.title3)
                     .foregroundColor(.secondary)
 
-                HStack(spacing: 12) {
-                    if let year = viewModel.album.releaseDate?.formatted(.dateTime.year()) {
-                        Text(year)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-
-                    if let genre = viewModel.album.genre {
-                        Text("•")
-                            .foregroundColor(.secondary)
-                        Text(genre)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-
-                    if let trackCount = viewModel.album.trackCount {
-                        Text("•")
-                            .foregroundColor(.secondary)
-                        Text("\(trackCount)曲")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
+                if let genre = viewModel.album.genre {
+                    Text(genre)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
             }
             .padding(.horizontal)
@@ -131,44 +101,36 @@ struct AlbumDetailView: View {
         .padding(.vertical, 24)
     }
 
-    // MARK: - Stats Section
+    // MARK: - Rating Section
 
-    private var statsSection: some View {
-        VStack(spacing: 12) {
-            Divider()
-
-            HStack(spacing: 40) {
-                VStack(spacing: 4) {
-                    if let averageRating = viewModel.averageRating {
-                        Text(String(format: "%.1f", averageRating))
-                            .font(.title)
-                            .fontWeight(.bold)
-                    }
-                    HStack(spacing: 2) {
-                        ForEach(0..<5) { index in
-                            Image(systemName: "star.fill")
-                                .font(.caption)
-                                .foregroundColor(.yellow)
-                        }
-                    }
-                    Text("平均評価")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-
-                VStack(spacing: 4) {
-                    Text("\(viewModel.reviewCount)")
-                        .font(.title)
-                        .fontWeight(.bold)
-                    Text("レビュー")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+    private var ratingSection: some View {
+        HStack {
+            // 評価表示
+            HStack(spacing: 4) {
+                Image(systemName: "star.fill")
+                    .font(.body)
+                    .foregroundColor(.yellow)
+                Text(String(format: "%.1f", viewModel.averageRating ?? 0.0))
+                    .font(.body)
+                    .fontWeight(.semibold)
             }
-            .padding(.vertical, 12)
 
-            Divider()
+            Spacer()
+
+            // +ボタン
+            Button(action: {
+                showingReviewSheet = true
+            }) {
+                Image(systemName: "plus")
+                    .font(.body)
+                    .foregroundColor(.purple)
+                    .frame(width: 32, height: 32)
+                    .background(Color.purple.opacity(0.1))
+                    .clipShape(Circle())
+            }
         }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
     }
 
     // MARK: - Track List Section
@@ -177,34 +139,25 @@ struct AlbumDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("トラックリスト")
                 .font(.headline)
-                .padding(.horizontal)
+                .padding(.horizontal, 24)
                 .padding(.top, 16)
 
             ForEach(viewModel.tracks) { track in
                 TrackRow(track: track)
-                    .padding(.horizontal)
+                    .padding(.horizontal, 24)
             }
         }
+        .padding(.bottom, 16)
     }
 
     // MARK: - Reviews Section
 
     private var reviewsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("レビュー")
-                    .font(.headline)
-
-                Spacer()
-
-                if viewModel.reviewCount > 0 {
-                    Text("\(viewModel.reviewCount)件")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding(.horizontal)
-            .padding(.top, 16)
+            Text("レビュー")
+                .font(.headline)
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
 
             if viewModel.isLoadingReviews {
                 ProgressView()
@@ -227,7 +180,7 @@ struct AlbumDetailView: View {
             } else {
                 ForEach(viewModel.reviews) { reviewWithUser in
                     DetailedReviewCard(reviewWithUser: reviewWithUser)
-                        .padding(.horizontal)
+                        .padding(.horizontal, 24)
                 }
             }
         }

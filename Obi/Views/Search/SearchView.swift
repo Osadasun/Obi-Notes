@@ -179,52 +179,22 @@ struct AlbumRow: View {
 // MARK: - Track Row
 struct TrackRow: View {
     let track: Track
+    var averageRating: Double? = nil
 
     var body: some View {
         HStack(spacing: 12) {
-            // アルバムアート
-            if let artworkURL = track.artworkURL, let url = URL(string: artworkURL) {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                }
-                .frame(width: 50, height: 50)
-                .cornerRadius(6)
-            } else {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 50, height: 50)
-                    .cornerRadius(6)
-                    .overlay(
-                        Image(systemName: "music.note")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                    )
+            // トラック番号（アルバムアートなし）
+            if let trackNumber = track.trackNumber {
+                Text("\(trackNumber)")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .frame(width: 30, alignment: .trailing)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(track.title)
-                    .font(.headline)
+                    .font(.body)
                     .lineLimit(1)
-
-                HStack(spacing: 4) {
-                    Text(track.artist)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-
-                    if let albumTitle = track.albumTitle {
-                        Text("•")
-                            .foregroundColor(.secondary)
-                        Text(albumTitle)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .lineLimit(1)
 
                 if let duration = track.durationFormatted {
                     Text(duration)
@@ -235,9 +205,15 @@ struct TrackRow: View {
 
             Spacer()
 
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            // 評価表示
+            HStack(spacing: 4) {
+                Image(systemName: "star.fill")
+                    .font(.caption)
+                    .foregroundColor(.yellow)
+                Text(String(format: "%.1f", averageRating ?? 0.0))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
     }
 }

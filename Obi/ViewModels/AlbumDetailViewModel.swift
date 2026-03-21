@@ -37,11 +37,14 @@ class AlbumDetailViewModel: ObservableObject {
         isLoadingTracks = true
         errorMessage = nil
 
-        // アルバムの詳細を取得してトラック情報を含める
-        // 注: MusicKitのAlbumにはtracksプロパティがあるが、
-        // 現在のAppleMusicServiceでは対応していないため、
-        // ここでは空配列のまま（後で実装）
-        tracks = []
+        do {
+            tracks = try await musicService.fetchAlbumTracks(albumId: album.id)
+            print("✅ アルバムトラック取得成功: \(tracks.count)件")
+        } catch {
+            print("❌ アルバムトラック取得エラー: \(error)")
+            errorMessage = error.localizedDescription
+            tracks = []
+        }
 
         isLoadingTracks = false
     }

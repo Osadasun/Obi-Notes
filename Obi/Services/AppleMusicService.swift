@@ -250,6 +250,41 @@ class AppleMusicService {
             trackNumber: musicKitSong.trackNumber
         )
     }
+
+    // MARK: - Album Tracks
+
+    func fetchAlbumTracks(albumId: String) async throws -> [Track] {
+        guard isAuthorized else {
+            throw MusicError.notAuthorized
+        }
+
+        let musicItemID = MusicItemID(albumId)
+
+        var request = MusicCatalogResourceRequest<MusicKit.Album>(matching: \.id, equalTo: musicItemID)
+        request.properties = [.tracks]
+
+        let response = try await request.response()
+
+        guard let musicKitAlbum = response.items.first else {
+            throw MusicError.notFound
+        }
+
+        guard let tracks = musicKitAlbum.tracks else {
+            return []
+        }
+
+        return tracks.map { musicKitSong in
+            Track(
+                id: musicKitSong.id.rawValue,
+                title: musicKitSong.title,
+                artist: musicKitSong.artistName,
+                albumTitle: musicKitSong.albumTitle,
+                artworkURL: musicKitSong.artwork?.url(width: 600, height: 600)?.absoluteString,
+                duration: musicKitSong.duration.map { Int($0 * 1000) },
+                trackNumber: musicKitSong.trackNumber
+            )
+        }
+    }
 }
 
 // MARK: - Music Error
