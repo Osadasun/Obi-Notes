@@ -144,7 +144,7 @@ struct HorizontalTabBar: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 24)
     }
 }
 
@@ -231,8 +231,8 @@ struct ObiView: View {
                                 )
                             }
                         }
-                        .padding(.horizontal)
-                        .padding(.top)
+                        .padding(.horizontal, 24)
+                          .padding(.top, 40)
                     }
 
                     // TabViewの下部拡張分のスペーサー

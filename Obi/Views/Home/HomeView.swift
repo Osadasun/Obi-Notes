@@ -27,14 +27,14 @@ struct HomeView: View {
                             ReviewCardPlaceholder()
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 24)
                 } else {
                     VStack(spacing: 12) {
                         ForEach(viewModel.latestReviews) { reviewWithUser in
                             ReviewCard(reviewWithUser: reviewWithUser)
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 24)
                 }
 
                 // 今週の人気アルバムセクション
@@ -46,14 +46,14 @@ struct HomeView: View {
                             PopularAlbumCard(album: nil)
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 24)
                 } else {
                     LazyVGrid(columns: gridColumns, spacing: 16) {
                         ForEach(viewModel.popularAlbums, id: \.id) { album in
                             PopularAlbumCard(album: album)
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 24)
                 }
 
                 // 話題のレビュアーセクション
@@ -65,14 +65,14 @@ struct HomeView: View {
                             ReviewerCard()
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 24)
                 }
 
                 // TabViewの下部拡張分のスペーサー
                 Color.clear
                     .frame(height: bottomSpacerHeight)
             }
-            .padding(.top, 16)
+            .padding(.top, 40)
         }
         .onAppear {
             if viewModel.latestReviews.isEmpty && viewModel.popularAlbums.isEmpty {
@@ -112,7 +112,7 @@ struct SectionHeaderView: View {
                 }
             }
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 24)
     }
 }
 
