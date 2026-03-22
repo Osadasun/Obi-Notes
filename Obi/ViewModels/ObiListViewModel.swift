@@ -21,6 +21,7 @@ class ObiListViewModel: ObservableObject {
     @Published var listenedArtworks: [String?] = []
     @Published var wishlistArtworks: [String?] = []
     @Published var customListArtworks: [UUID: [String?]] = [:]
+    @Published var latestReview: Review? = nil // 最新のレビュー
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
@@ -41,6 +42,9 @@ class ObiListViewModel: ObservableObject {
             let reviews = try await supabaseService.fetchMyReviews(userId: userId)
             let uniqueAlbums = Set(reviews.map { $0.targetId })
             reviewedCount = uniqueAlbums.count
+
+            // 最新のレビューを保持（ObiCard表示用）
+            latestReview = reviews.first
 
             // 各リストの件数を取得
             let lists = try await supabaseService.fetchUserLists(userId: userId)

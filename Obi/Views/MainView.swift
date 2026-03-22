@@ -189,12 +189,27 @@ struct ObiView: View {
                             .frame(width: geometry.size.width, height: geometry.size.width)
                             .overlay(
                                 // ObiCardを中央に配置
-                                ObiCard(
-                                    artworkURL: nil as String?,
-                                    reviewTitle: "タイトル",
-                                    reviewText: "これはレビューのサンプルテキストです。縦書きで表示されます。",
-                                    cardHeight: geometry.size.width - 48
-                                )
+                                Group {
+                                    if let review = viewModel.latestReview {
+                                        ObiCard(
+                                            artworkURL: review.albumArt,
+                                            reviewTitle: review.title,
+                                            reviewText: review.text ?? "レビューテキストがありません",
+                                            cardHeight: geometry.size.width - 24,
+                                            style: ObiCardStyle.forTargetType(review.targetType)
+                                        )
+                                    } else {
+                                        // レビューがない場合はプレースホルダー
+                                        VStack(spacing: 16) {
+                                            Image(systemName: "music.note.list")
+                                                .font(.system(size: 48))
+                                                .foregroundColor(.gray.opacity(0.5))
+                                            Text("レビューを書いてみましょう")
+                                                .font(.subheadline)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                }
                             )
                     }
                     .aspectRatio(1, contentMode: .fit)
