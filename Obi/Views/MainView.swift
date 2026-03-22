@@ -182,6 +182,25 @@ struct ObiView: View {
         ZStack(alignment: .bottomTrailing) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+                    // 上部の正方形グレー背景エリア（ObiCard表示エリア）
+                    GeometryReader { geometry in
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(width: geometry.size.width, height: geometry.size.width)
+                            .overlay(
+                                // ObiCardを中央に配置
+                                ObiCard(
+                                    artworkURL: nil as String?,
+                                    reviewTitle: "タイトル",
+                                    reviewText: "これはレビューのサンプルテキストです。縦書きで表示されます。",
+                                    cardHeight: geometry.size.width - 48
+                                )
+                            )
+                    }
+                    .aspectRatio(1, contentMode: .fit)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
+
                     if viewModel.isLoading {
                         ProgressView()
                             .frame(maxWidth: .infinity)
@@ -239,7 +258,7 @@ struct ObiView: View {
                             }
                         }
                         .padding(.horizontal, 24)
-                          .padding(.top, 40)
+                          .padding(.top, 16)
                     }
 
                     // TabViewの下部拡張分のスペーサー

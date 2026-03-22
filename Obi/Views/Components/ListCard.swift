@@ -81,62 +81,51 @@ struct ListCard: View {
 
     @ViewBuilder
     private var albumArtworkGrid: some View {
-        GeometryReader { geometry in
-            let size = geometry.size.width
-            let displayArtworks = Array(artworkURLs.prefix(3))
+        let displayArtworks = Array(artworkURLs.prefix(3))
 
-            if displayArtworks.count == 1 {
-                // 1枚の場合：全体に表示
-                if let urlString = displayArtworks[0], let url = URL(string: urlString) {
-                    AsyncImage(url: url) { image in
-                        image.resizable().aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Color.gray.opacity(0.3)
-                    }
-                    .frame(width: size, height: size)
+        // 3Dスタック風のレイアウト（最大3枚を重ねて表示）
+        ZStack {
+            // 3枚目（最背面・左寄り）
+            if displayArtworks.count >= 3, let urlString = displayArtworks[2], let url = URL(string: urlString) {
+                AsyncImage(url: url) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Color.gray.opacity(0.3)
                 }
-            } else if displayArtworks.count == 2 {
-                // 2枚の場合：左右に分割
-                HStack(spacing: 2) {
-                    ForEach(0..<2, id: \.self) { index in
-                        if let urlString = displayArtworks[index], let url = URL(string: urlString) {
-                            AsyncImage(url: url) { image in
-                                image.resizable().aspectRatio(contentMode: .fill)
-                            } placeholder: {
-                                Color.gray.opacity(0.3)
-                            }
-                            .frame(width: size / 2 - 1, height: size)
-                        }
-                    }
-                }
-            } else if displayArtworks.count == 3 {
-                // 3枚の場合：左に1枚、右に2枚縦並び
-                HStack(spacing: 2) {
-                    // 左側：1枚目
-                    if let urlString = displayArtworks[0], let url = URL(string: urlString) {
-                        AsyncImage(url: url) { image in
-                            image.resizable().aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Color.gray.opacity(0.3)
-                        }
-                        .frame(width: size / 2 - 1, height: size)
-                    }
+                .frame(width: 70, height: 70)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                .rotationEffect(.degrees(-8))
+                .offset(x: -25, y: 5)
+            }
 
-                    // 右側：2枚縦並び
-                    VStack(spacing: 2) {
-                        ForEach(1..<3, id: \.self) { index in
-                            if let urlString = displayArtworks[index], let url = URL(string: urlString) {
-                                AsyncImage(url: url) { image in
-                                    image.resizable().aspectRatio(contentMode: .fill)
-                                } placeholder: {
-                                    Color.gray.opacity(0.3)
-                                }
-                                .frame(width: size / 2 - 1, height: size / 2 - 1)
-                            }
-                        }
-                    }
+            // 2枚目（中間・右寄り）
+            if displayArtworks.count >= 2, let urlString = displayArtworks[1], let url = URL(string: urlString) {
+                AsyncImage(url: url) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Color.gray.opacity(0.3)
                 }
+                .frame(width: 70, height: 70)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                .rotationEffect(.degrees(8))
+                .offset(x: 25, y: 0)
+            }
+
+            // 1枚目（最前面・中央）
+            if let urlString = displayArtworks.first ?? nil, let url = URL(string: urlString) {
+                AsyncImage(url: url) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Color.gray.opacity(0.3)
+                }
+                .frame(width: 80, height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .shadow(color: .black.opacity(0.3), radius: 6, x: 0, y: 3)
+                .offset(y: -5)
             }
         }
+        .frame(height: 100)
     }
 }
