@@ -16,6 +16,11 @@ class ObiListViewModel: ObservableObject {
     @Published var wishlistCount: Int = 0
     @Published var customLists: [MusicList] = []
     @Published var customListCounts: [UUID: Int] = [:] // カスタムリストの件数を保持
+    @Published var reviewedArtworks: [String?] = []
+    @Published var favoriteArtworks: [String?] = []
+    @Published var listenedArtworks: [String?] = []
+    @Published var wishlistArtworks: [String?] = []
+    @Published var customListArtworks: [UUID: [String?]] = [:]
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
@@ -45,22 +50,30 @@ class ObiListViewModel: ObservableObject {
 
             for list in lists {
                 let items = try await supabaseService.fetchListItems(listId: list.id)
+                let artworks = items.prefix(3).map { $0.albumArt }
 
                 switch list.defaultType {
                 case .reviewed:
                     // レビュー済みは上で計算済み（reviewedCount）
+                    // レビューからアートワークを取得
+                    let reviewArtworks = reviews.prefix(3).map { $0.albumArt }
+                    reviewedArtworks = Array(reviewArtworks)
                     break
                 case .favorite:
                     favoriteCount = items.count
+                    favoriteArtworks = Array(artworks)
                 case .listened:
                     listenedCount = items.count
+                    listenedArtworks = Array(artworks)
                 case .wishlist:
                     wishlistCount = items.count
+                    wishlistArtworks = Array(artworks)
                 case .none:
                     // カスタムリストの場合
                     if list.type == .custom {
                         customListsArray.append(list)
                         customListCounts[list.id] = items.count
+                        customListArtworks[list.id] = Array(artworks)
                     }
                 }
             }

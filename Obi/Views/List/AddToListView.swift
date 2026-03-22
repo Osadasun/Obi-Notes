@@ -45,18 +45,19 @@ struct AddToListView: View {
 
                                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], spacing: 20) {
                                         ForEach(viewModel.defaultLists) { list in
-                                            ListCard(
-                                                icon: viewModel.iconForList(list),
-                                                title: list.name,
-                                                count: viewModel.listCounts[list.id] ?? 0,
-                                                color: viewModel.colorForList(list),
-                                                isSelected: viewModel.addedListIds.contains(list.id),
-                                                action: {
-                                                    Task {
-                                                        await viewModel.toggleList(list)
-                                                    }
+                                            Button(action: {
+                                                Task {
+                                                    await viewModel.toggleList(list)
                                                 }
-                                            )
+                                            }) {
+                                                ListCard(
+                                                    title: list.name,
+                                                    count: viewModel.listCounts[list.id] ?? 0,
+                                                    artworkURLs: viewModel.listArtworks[list.id] ?? [],
+                                                    isSelected: viewModel.addedListIds.contains(list.id)
+                                                )
+                                            }
+                                            .buttonStyle(.plain)
                                         }
                                     }
                                     .padding(.horizontal, 24)
@@ -72,18 +73,19 @@ struct AddToListView: View {
 
                                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], spacing: 20) {
                                         ForEach(viewModel.customLists) { list in
-                                            ListCard(
-                                                icon: viewModel.iconForList(list),
-                                                title: list.name,
-                                                count: viewModel.listCounts[list.id] ?? 0,
-                                                color: viewModel.colorForList(list),
-                                                isSelected: viewModel.addedListIds.contains(list.id),
-                                                action: {
-                                                    Task {
-                                                        await viewModel.toggleList(list)
-                                                    }
+                                            Button(action: {
+                                                Task {
+                                                    await viewModel.toggleList(list)
                                                 }
-                                            )
+                                            }) {
+                                                ListCard(
+                                                    title: list.name,
+                                                    count: viewModel.listCounts[list.id] ?? 0,
+                                                    artworkURLs: viewModel.listArtworks[list.id] ?? [],
+                                                    isSelected: viewModel.addedListIds.contains(list.id)
+                                                )
+                                            }
+                                            .buttonStyle(.plain)
                                         }
                                     }
                                     .padding(.horizontal, 24)

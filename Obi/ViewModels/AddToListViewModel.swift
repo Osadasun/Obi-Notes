@@ -14,6 +14,7 @@ class AddToListViewModel: ObservableObject {
     @Published var lists: [MusicList] = []
     @Published var addedListIds: Set<UUID> = []
     @Published var listCounts: [UUID: Int] = [:] // リストの件数を保持
+    @Published var listArtworks: [UUID: [String?]] = [:] // リストのアートワークを保持
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -70,10 +71,12 @@ class AddToListViewModel: ObservableObject {
             // 各リストに対して、このアイテムが含まれているかチェック
             var addedIds: Set<UUID> = []
             var counts: [UUID: Int] = [:]
+            var artworks: [UUID: [String?]] = [:]
 
             for list in lists {
                 let items = try await supabaseService.fetchListItems(listId: list.id)
                 counts[list.id] = items.count
+                artworks[list.id] = items.prefix(3).map { $0.albumArt }
                 if items.contains(where: { $0.targetId == targetId }) {
                     addedIds.insert(list.id)
                 }
@@ -81,6 +84,7 @@ class AddToListViewModel: ObservableObject {
 
             addedListIds = addedIds
             listCounts = counts
+            listArtworks = artworks
         } catch {
             print("❌ リストアイテムチェックエラー: \(error)")
         }
