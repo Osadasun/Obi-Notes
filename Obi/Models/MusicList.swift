@@ -37,9 +37,10 @@ enum ListType: String, Codable {
 
 // MARK: - Default List Type
 enum DefaultListType: String, Codable {
-    case listened
-    case wishlist
-    case favorite
+    case reviewed  // レビュー済み
+    case listened  // 聴いた
+    case wishlist  // 聴きたい
+    case favorite  // お気に入り
 }
 
 // MARK: - List Item

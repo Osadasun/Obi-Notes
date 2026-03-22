@@ -1,19 +1,19 @@
 //
-//  AlbumDetailView.swift
+//  TrackDetailView.swift
 //  Obi
 //
-//  アルバム詳細画面
+//  曲詳細画面
 //
 
 import SwiftUI
 
-struct AlbumDetailView: View {
-    @StateObject private var viewModel: AlbumDetailViewModel
+struct TrackDetailView: View {
+    @StateObject private var viewModel: TrackDetailViewModel
     @State private var showingReviewSheet = false
     @State private var showingAddToListSheet = false
 
-    init(album: Album) {
-        _viewModel = StateObject(wrappedValue: AlbumDetailViewModel(album: album))
+    init(track: Track) {
+        _viewModel = StateObject(wrappedValue: TrackDetailViewModel(track: track))
     }
 
     var body: some View {
@@ -21,15 +21,10 @@ struct AlbumDetailView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     // アルバムアート & 基本情報
-                    albumHeader
+                    trackHeader
 
                     // 評価表示
                     ratingSection
-
-                    // トラックリスト
-                    if !viewModel.tracks.isEmpty {
-                        trackListSection
-                    }
 
                     // レビュー一覧
                     reviewsSection
@@ -58,28 +53,28 @@ struct AlbumDetailView: View {
         .sheet(isPresented: $showingReviewSheet) {
             NavigationStack {
                 WriteReviewView(musicItem: MusicItem(
-                    id: viewModel.album.id,
-                    title: viewModel.album.title,
-                    artist: viewModel.album.artist,
-                    artworkURL: viewModel.album.artworkURL,
-                    type: .album
+                    id: viewModel.track.id,
+                    title: viewModel.track.title,
+                    artist: viewModel.track.artist,
+                    artworkURL: viewModel.track.artworkURL,
+                    type: .track
                 ))
             }
         }
         .sheet(isPresented: $showingAddToListSheet) {
-            AddToListView(album: viewModel.album)
+            AddToListView(track: viewModel.track)
         }
         .task {
             await viewModel.loadData()
         }
     }
 
-    // MARK: - Album Header
+    // MARK: - Track Header
 
-    private var albumHeader: some View {
+    private var trackHeader: some View {
         VStack(spacing: 16) {
             // アルバムアート
-            if let artworkURL = viewModel.album.artworkURL600, let url = URL(string: artworkURL) {
+            if let artworkURL = viewModel.track.artworkURL, let url = URL(string: artworkURL) {
                 AsyncImage(url: url) { image in
                     image
                         .resizable()
@@ -103,19 +98,25 @@ struct AlbumDetailView: View {
                     )
             }
 
-            // アルバム情報
+            // 曲情報
             VStack(spacing: 8) {
-                Text(viewModel.album.title)
+                Text(viewModel.track.title)
                     .font(.title2)
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
 
-                Text(viewModel.album.artist)
+                Text(viewModel.track.artist)
                     .font(.title3)
                     .foregroundColor(.secondary)
 
-                if let genre = viewModel.album.genre {
-                    Text(genre)
+                if let albumTitle = viewModel.track.albumTitle {
+                    Text(albumTitle)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+
+                if let duration = viewModel.track.durationFormatted {
+                    Text(duration)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -155,26 +156,6 @@ struct AlbumDetailView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
-    }
-
-    // MARK: - Track List Section
-
-    private var trackListSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("トラックリスト")
-                .font(.headline)
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-
-            ForEach(viewModel.tracks) { track in
-                NavigationLink(destination: TrackDetailView(track: track)) {
-                    TrackRow(track: track)
-                        .padding(.horizontal, 24)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.bottom, 16)
     }
 
     // MARK: - Reviews Section
@@ -217,14 +198,14 @@ struct AlbumDetailView: View {
 
 #Preview {
     NavigationStack {
-        AlbumDetailView(album: Album(
+        TrackDetailView(track: Track(
             id: "1",
-            title: "Abbey Road",
+            title: "Come Together",
             artist: "The Beatles",
+            albumTitle: "Abbey Road",
             artworkURL: "https://example.com/artwork.jpg",
-            releaseDate: Date(),
-            genre: "Rock",
-            trackCount: 17
+            duration: 259000,
+            trackNumber: 1
         ))
     }
 }

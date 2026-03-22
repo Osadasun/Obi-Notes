@@ -196,6 +196,16 @@ class AuthenticationViewModel: ObservableObject {
         do {
             _ = try await supabaseService.createUser(newUser)
             print("✅ ユーザープロフィール作成成功")
+
+            // デフォルトリストを作成
+            do {
+                try await supabaseService.createDefaultLists(for: userId)
+                print("✅ デフォルトリスト作成成功")
+            } catch {
+                print("❌ デフォルトリスト作成エラー: \(error)")
+                // デフォルトリスト作成失敗してもユーザー作成は成功とする
+            }
+
             isAuthenticated = true
         } catch {
             print("❌ ユーザープロフィール作成エラー: \(error)")

@@ -190,45 +190,62 @@ struct ObiView: View {
                         // デフォルトリスト + カスタムリスト（統一された2列グリッド）
                         LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], spacing: 20) {
                             // デフォルトリスト
-                            ListCard(
-                                icon: "music.note.list",
-                                title: "レビュー済み",
-                                count: viewModel.reviewedCount,
-                                color: .purple,
-                                listType: .reviewed
-                            )
+                            NavigationLink(destination: ListDetailView(listType: .reviewed)) {
+                                ListCard(
+                                    icon: "music.note.list",
+                                    title: "レビュー済み",
+                                    count: viewModel.reviewedCount,
+                                    color: .purple,
+                                    action: {}
+                                )
+                            }
+                            .buttonStyle(.plain)
 
-                            ListCard(
-                                icon: "heart.fill",
-                                title: "お気に入り",
-                                count: viewModel.favoriteCount,
-                                color: .pink,
-                                listType: .favorite
-                            )
+                            NavigationLink(destination: ListDetailView(listType: .favorite)) {
+                                ListCard(
+                                    icon: "heart.fill",
+                                    title: "お気に入り",
+                                    count: viewModel.favoriteCount,
+                                    color: .pink,
+                                    action: {}
+                                )
+                            }
+                            .buttonStyle(.plain)
 
-                            ListCard(
-                                icon: "headphones",
-                                title: "聴いた",
-                                count: viewModel.listenedCount,
-                                color: .blue,
-                                listType: .listened
-                            )
+                            NavigationLink(destination: ListDetailView(listType: .listened)) {
+                                ListCard(
+                                    icon: "headphones",
+                                    title: "聴いた",
+                                    count: viewModel.listenedCount,
+                                    color: .blue,
+                                    action: {}
+                                )
+                            }
+                            .buttonStyle(.plain)
 
-                            ListCard(
-                                icon: "star.fill",
-                                title: "聴きたい",
-                                count: viewModel.wishlistCount,
-                                color: .orange,
-                                listType: .wishlist
-                            )
+                            NavigationLink(destination: ListDetailView(listType: .wishlist)) {
+                                ListCard(
+                                    icon: "star.fill",
+                                    title: "聴きたい",
+                                    count: viewModel.wishlistCount,
+                                    color: .orange,
+                                    action: {}
+                                )
+                            }
+                            .buttonStyle(.plain)
 
                             // カスタムリスト
                             ForEach(viewModel.customLists) { list in
-                                ListCard(
-                                    title: list.name,
-                                    count: viewModel.customListCounts[list.id] ?? 0,
-                                    customList: list
-                                )
+                                NavigationLink(destination: CustomListDetailView(list: list)) {
+                                    ListCard(
+                                        icon: "music.note.list",
+                                        title: list.name,
+                                        count: viewModel.customListCounts[list.id] ?? 0,
+                                        color: .purple,
+                                        action: {}
+                                    )
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                         .padding(.horizontal, 24)
@@ -312,60 +329,6 @@ struct CustomListDetailView: View {
         .refreshable {
             await viewModel.loadAlbums()
         }
-    }
-}
-
-// MARK: - List Card
-struct ListCard: View {
-    let icon: String
-    let title: String
-    let count: Int
-    let color: Color
-    let destination: AnyView
-
-    init(icon: String, title: String, count: Int, color: Color, listType: MyListCategory) {
-        self.icon = icon
-        self.title = title
-        self.count = count
-        self.color = color
-        self.destination = AnyView(ListDetailView(listType: listType))
-    }
-
-    init(icon: String = "music.note.list", title: String, count: Int, color: Color = .purple, customList: MusicList) {
-        self.icon = icon
-        self.title = title
-        self.count = count
-        self.color = color
-        self.destination = AnyView(CustomListDetailView(list: customList))
-    }
-
-    var body: some View {
-        NavigationLink(destination: destination) {
-            VStack(spacing: 12) {
-                // アイコンエリア（正方形）
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.gray.opacity(0.1))
-                    .aspectRatio(1, contentMode: .fit)
-                    .overlay(
-                        Image(systemName: icon)
-                            .font(.system(size: 40))
-                            .foregroundColor(color)
-                    )
-
-                // タイトルと件数
-                VStack(spacing: 4) {
-                    Text(title)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-
-                    Text("\(count)件")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-        .buttonStyle(.plain)
     }
 }
 

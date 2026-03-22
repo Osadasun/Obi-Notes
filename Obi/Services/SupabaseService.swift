@@ -265,14 +265,25 @@ class SupabaseService {
 
     // MARK: - Lists
 
-    func fetchUserLists(userId: UUID) async throws -> [MusicList] {
+    func fetchUserLists(userId: UUID? = nil) async throws -> [MusicList] {
         guard let client = client else {
             throw SupabaseError.notConfigured
         }
+
+        // userIdが指定されていない場合は現在のユーザーを使用
+        let targetUserId: UUID
+        if let userId = userId {
+            targetUserId = userId
+        } else if let currentUserId = UserManager.shared.currentUserId {
+            targetUserId = currentUserId
+        } else {
+            throw SupabaseError.notConfigured
+        }
+
         let response: [MusicList] = try await client.database
             .from("lists")
             .select()
-            .eq("user_id", value: userId.uuidString)
+            .eq("user_id", value: targetUserId.uuidString)
             .order("created_at", ascending: false)
             .execute()
             .value
@@ -291,6 +302,40 @@ class SupabaseService {
             .execute()
             .value
         return response
+    }
+
+    func createDefaultLists(for userId: UUID) async throws {
+        guard client != nil else {
+            throw SupabaseError.notConfigured
+        }
+
+        let defaultLists: [(DefaultListType, String)] = [
+            (.reviewed, "レビュー済み"),
+            (.favorite, "お気に入り"),
+            (.listened, "聴いた"),
+            (.wishlist, "聴きたい")
+        ]
+
+        for (type, name) in defaultLists {
+            let list = MusicList(
+                id: UUID(),
+                userId: userId,
+                name: name,
+                description: nil,
+                isPublic: false,
+                type: .default,
+                defaultType: type,
+                createdAt: Date()
+            )
+
+            do {
+                _ = try await createList(list)
+                print("✅ デフォルトリスト作成成功: \(name)")
+            } catch {
+                print("❌ デフォルトリスト作成エラー (\(name)): \(error)")
+                // エラーがあっても続行（既に存在する場合など）
+            }
+        }
     }
 
     func addItemToList(listId: UUID, item: ListItem) async throws {
@@ -326,6 +371,55 @@ class SupabaseService {
             .execute()
             .value
         return response
+    }
+
+    // MARK: - Add/Remove from List (Convenience Methods)
+
+    func addToList(
+        listId: UUID,
+        targetType: TargetType,
+        targetId: String,
+        title: String,
+        artist: String,
+        artworkURL: String?
+    ) async throws {
+        guard client != nil else {
+            throw SupabaseError.notConfigured
+        }
+
+        let item = ListItem(
+            id: UUID(),
+            listId: listId,
+            targetType: targetType,
+            targetId: targetId,
+            addedAt: Date(),
+            albumArt: artworkURL,
+            title: title,
+            artist: artist,
+            userRating: nil
+        )
+
+        try await addItemToList(listId: listId, item: item)
+    }
+
+    func removeFromList(listId: UUID, targetId: String) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        // まず該当するアイテムを検索
+        let items: [ListItem] = try await client.database
+            .from("list_items")
+            .select()
+            .eq("list_id", value: listId.uuidString)
+            .eq("target_id", value: targetId)
+            .execute()
+            .value
+
+        // 見つかったアイテムを削除
+        for item in items {
+            try await removeItemFromList(itemId: item.id)
+        }
     }
 
     // MARK: - Statistics

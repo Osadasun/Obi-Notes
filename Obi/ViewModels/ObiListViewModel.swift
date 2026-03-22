@@ -47,6 +47,9 @@ class ObiListViewModel: ObservableObject {
                 let items = try await supabaseService.fetchListItems(listId: list.id)
 
                 switch list.defaultType {
+                case .reviewed:
+                    // レビュー済みは上で計算済み（reviewedCount）
+                    break
                 case .favorite:
                     favoriteCount = items.count
                 case .listened:

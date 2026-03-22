@@ -151,50 +151,35 @@ class AppleMusicService {
             throw MusicError.notAuthorized
         }
 
-        // 人気の検索キーワードを使用してアルバムを取得
-        // 複数のジャンルや人気アーティストで検索して多様性を確保
-        let searchTerms = ["top hits 2024", "new releases", "popular music"]
-        var allAlbums: [Album] = []
+        do {
+            // 日本のアルバムチャートを取得
+            let request = MusicCatalogChartsRequest(kinds: [.mostPlayed], types: [MusicKit.Album.self])
+            let response = try await request.response()
 
-        for term in searchTerms {
-            var request = MusicCatalogSearchRequest(term: term, types: [MusicKit.Album.self])
-            request.limit = limit / searchTerms.count + 1
-
-            do {
-                let response = try await request.response()
-                let albums = response.albums.map { musicKitAlbum in
-                    Album(
-                        id: musicKitAlbum.id.rawValue,
-                        title: musicKitAlbum.title,
-                        artist: musicKitAlbum.artistName,
-                        artworkURL: musicKitAlbum.artwork?.url(width: 600, height: 600)?.absoluteString,
-                        releaseDate: musicKitAlbum.releaseDate,
-                        genre: musicKitAlbum.genreNames.first,
-                        trackCount: musicKitAlbum.trackCount
-                    )
-                }
-                allAlbums.append(contentsOf: albums)
-            } catch {
-                print("⚠️ 検索エラー (\(term)): \(error)")
+            guard let albumChart = response.albumCharts.first else {
+                print("⚠️ アルバムチャートが見つかりませんでした")
+                return []
             }
-        }
 
-        // 重複を削除してlimitまで返す
-        var uniqueAlbums: [Album] = []
-        var seenIds = Set<String>()
-
-        for album in allAlbums {
-            if !seenIds.contains(album.id) {
-                uniqueAlbums.append(album)
-                seenIds.insert(album.id)
-                if uniqueAlbums.count >= limit {
-                    break
-                }
+            // limitまでのアルバムを取得
+            let albums = albumChart.items.prefix(limit).map { musicKitAlbum in
+                Album(
+                    id: musicKitAlbum.id.rawValue,
+                    title: musicKitAlbum.title,
+                    artist: musicKitAlbum.artistName,
+                    artworkURL: musicKitAlbum.artwork?.url(width: 600, height: 600)?.absoluteString,
+                    releaseDate: musicKitAlbum.releaseDate,
+                    genre: musicKitAlbum.genreNames.first,
+                    trackCount: musicKitAlbum.trackCount
+                )
             }
-        }
 
-        print("✅ 人気アルバム取得成功: \(uniqueAlbums.count)件")
-        return uniqueAlbums
+            print("✅ 人気アルバム取得成功: \(albums.count)件")
+            return Array(albums)
+        } catch {
+            print("❌ 人気アルバム取得エラー: \(error)")
+            throw error
+        }
     }
 
     // MARK: - Fetch Details
