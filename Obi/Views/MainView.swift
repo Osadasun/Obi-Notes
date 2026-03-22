@@ -196,7 +196,8 @@ struct ObiView: View {
                                             reviewTitle: review.title,
                                             reviewText: review.text ?? "レビューテキストがありません",
                                             cardHeight: geometry.size.width - 24,
-                                            style: ObiCardStyle.forTargetType(review.targetType)
+                                            style: ObiCardStyle.forTargetType(review.targetType),
+                                            rating: review.rating
                                         )
                                     } else {
                                         // レビューがない場合はプレースホルダー

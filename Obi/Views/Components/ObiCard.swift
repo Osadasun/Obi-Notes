@@ -48,6 +48,7 @@ struct ObiCard: View {
     let reviewText: String
     let cardHeight: CGFloat
     let style: ObiCardStyle
+    let rating: Double?
 
     @State private var obiColor: Color = Color(red: 0.4, green: 0.2, blue: 0.15)
 
@@ -56,13 +57,15 @@ struct ObiCard: View {
         reviewTitle: String,
         reviewText: String,
         cardHeight: CGFloat,
-        style: ObiCardStyle = .horizontal
+        style: ObiCardStyle = .horizontal,
+        rating: Double? = nil
     ) {
         self.artworkURL = artworkURL
         self.reviewTitle = reviewTitle
         self.reviewText = reviewText
         self.cardHeight = cardHeight
         self.style = style
+        self.rating = rating
     }
 
     var body: some View {
@@ -194,15 +197,27 @@ struct ObiCard: View {
                     Color.gray.opacity(0.3)
                 }
             }
-            .frame(width: cardHeight, height: cardHeight)
+            .frame(width: cardHeight * 0.75, height: cardHeight * 0.75)
             .clipShape(RoundedRectangle(cornerRadius: 8))
 
             // 下部の帯（背景 + テキスト）
             VStack(alignment: .leading, spacing: 6) {
-                Text(reviewTitle)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white)
-                    .lineLimit(1)
+                HStack(alignment: .center, spacing: 8) {
+                    Text(reviewTitle)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+
+                    Spacer(minLength: 8)
+
+                    if let rating = rating {
+                        Text(String(format: "★ %.1f", rating))
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .fixedSize()
+                    }
+                }
 
                 Text(reviewText)
                     .font(.system(size: 14))
@@ -214,7 +229,7 @@ struct ObiCard: View {
             .padding(.vertical, 12)
             .background(obiColor)
         }
-        .frame(width: cardHeight, height: cardHeight)
+        .frame(width: cardHeight * 0.75, height: cardHeight * 0.75)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
     }
