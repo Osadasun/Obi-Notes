@@ -13,6 +13,7 @@ struct Review: Identifiable, Codable {
     let targetType: TargetType
     let targetId: String // Apple Music ID
     var rating: Double // 0.5 ~ 5.0
+    var reviewTitle: String? // レビューのタイトル
     var text: String?
     var isPublic: Bool
     let createdAt: Date
@@ -29,6 +30,7 @@ struct Review: Identifiable, Codable {
         case targetType = "target_type"
         case targetId = "target_id"
         case rating
+        case reviewTitle = "review_title"
         case text = "review_text"
         case isPublic = "is_public"
         case createdAt = "created_at"

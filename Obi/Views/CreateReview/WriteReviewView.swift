@@ -95,6 +95,18 @@ struct WriteReviewView: View {
 
                 Divider()
 
+                // レビュータイトル
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("タイトル")
+                        .font(.headline)
+
+                    TextField("タイトルを入力...", text: $viewModel.reviewTitle)
+                        .textFieldStyle(.roundedBorder)
+                        .padding(.horizontal, 4)
+                }
+
+                Divider()
+
                 // レビューコメント
                 VStack(alignment: .leading, spacing: 12) {
                     Text("レビュー")

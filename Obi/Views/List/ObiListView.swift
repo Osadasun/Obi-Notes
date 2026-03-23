@@ -29,7 +29,7 @@ struct ObiListView: View {
                         NavigationLink(destination: destinationView(for: review)) {
                             ObiCard(
                                 artworkURL: review.albumArt,
-                                reviewTitle: review.title,
+                                reviewTitle: review.reviewTitle ?? review.title,
                                 reviewText: review.text ?? "レビューテキストがありません",
                                 cardHeight: 240,
                                 style: ObiCardStyle.forTargetType(review.targetType),

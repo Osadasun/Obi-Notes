@@ -194,7 +194,7 @@ struct ObiView: View {
                                         if let review = viewModel.latestReview {
                                             ObiCard(
                                                 artworkURL: review.albumArt,
-                                                reviewTitle: review.title,
+                                                reviewTitle: review.reviewTitle ?? review.title,
                                                 reviewText: review.text ?? "レビューテキストがありません",
                                                 cardHeight: geometry.size.width - 24,
                                                 style: ObiCardStyle.forTargetType(review.targetType),

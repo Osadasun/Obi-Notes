@@ -11,6 +11,7 @@ import Combine
 @MainActor
 class CreateReviewViewModel: ObservableObject {
     @Published var rating: Double = 3.0
+    @Published var reviewTitle: String = ""
     @Published var reviewText: String = ""
     @Published var isPublic: Bool = true
     @Published var isSubmitting: Bool = false
@@ -26,7 +27,7 @@ class CreateReviewViewModel: ObservableObject {
     }
 
     var canSubmit: Bool {
-        !reviewText.isEmpty && rating > 0
+        !reviewTitle.isEmpty && !reviewText.isEmpty && rating > 0
     }
 
     func submitReview() async {
@@ -51,6 +52,7 @@ class CreateReviewViewModel: ObservableObject {
                 targetType: musicItem.type == .album ? .album : .track,
                 targetId: musicItem.id,
                 rating: rating,
+                reviewTitle: reviewTitle,
                 text: reviewText,
                 isPublic: isPublic,
                 createdAt: now,
