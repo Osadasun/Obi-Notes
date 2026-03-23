@@ -1,0 +1,232 @@
+//
+//  ReviewDetailView.swift
+//  Obi
+//
+//  レビュー詳細画面
+//
+
+import SwiftUI
+
+struct ReviewDetailView: View {
+    let review: Review
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // アルバム/トラック情報
+                HStack(spacing: 16) {
+                    // アートワーク
+                    if let artworkURL = review.albumArt, let url = URL(string: artworkURL) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.2))
+                        }
+                        .frame(width: 120, height: 120)
+                        .cornerRadius(12)
+                    } else {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(width: 120, height: 120)
+                            .cornerRadius(12)
+                            .overlay(
+                                Image(systemName: "music.note")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.gray)
+                            )
+                    }
+
+                    // タイトル・アーティスト
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(review.title)
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .lineLimit(2)
+
+                        Text(review.artist)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+
+                        Text(review.targetType == .album ? "アルバム" : "楽曲")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color(.systemGray5))
+                            .cornerRadius(4)
+                    }
+
+                    Spacer()
+                }
+
+                Divider()
+
+                // 評価
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("評価")
+                        .font(.headline)
+
+                    HStack(spacing: 8) {
+                        ForEach(1...5, id: \.self) { index in
+                            Image(systemName: index <= Int(review.rating) ? "star.fill" : "star")
+                                .font(.title2)
+                                .foregroundColor(index <= Int(review.rating) ? .yellow : .gray)
+                        }
+
+                        Text(String(format: "%.1f", review.rating))
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .padding(.leading, 8)
+                    }
+                }
+
+                Divider()
+
+                // レビュータイトル
+                if let reviewTitle = review.reviewTitle {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("タイトル")
+                            .font(.headline)
+
+                        Text(reviewTitle)
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                    }
+
+                    Divider()
+                }
+
+                // レビュー本文
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("レビュー")
+                        .font(.headline)
+
+                    if let reviewText = review.text {
+                        Text(reviewText)
+                            .font(.body)
+                            .lineSpacing(6)
+                    } else {
+                        Text("レビュー本文がありません")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .italic()
+                    }
+                }
+
+                Divider()
+
+                // 投稿日時
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("投稿日")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        Spacer()
+
+                        Text(review.createdAt.formatted(date: .long, time: .shortened))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    if review.updatedAt != review.createdAt {
+                        HStack {
+                            Text("更新日")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            Spacer()
+
+                            Text(review.updatedAt.formatted(date: .long, time: .shortened))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+            .padding()
+        }
+        .navigationTitle("レビュー詳細")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                // アルバム/トラック詳細へのリンク
+                NavigationLink(destination: destinationView) {
+                    HStack(spacing: 4) {
+                        Text(review.targetType == .album ? "アルバム" : "楽曲")
+                            .font(.caption)
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var destinationView: some View {
+        switch review.targetType {
+        case .album:
+            if let album = convertReviewToAlbum(review) {
+                AlbumDetailView(album: album)
+            } else {
+                Text("アルバム情報が見つかりません")
+            }
+        case .track:
+            if let track = convertReviewToTrack(review) {
+                TrackDetailView(track: track)
+            } else {
+                Text("トラック情報が見つかりません")
+            }
+        }
+    }
+
+    private func convertReviewToAlbum(_ review: Review) -> Album? {
+        return Album(
+            id: review.targetId,
+            title: review.title,
+            artist: review.artist,
+            artworkURL: review.albumArt,
+            releaseDate: nil,
+            genre: nil,
+            trackCount: nil
+        )
+    }
+
+    private func convertReviewToTrack(_ review: Review) -> Track? {
+        return Track(
+            id: review.targetId,
+            title: review.title,
+            artist: review.artist,
+            albumTitle: nil,
+            artworkURL: review.albumArt,
+            duration: nil,
+            trackNumber: nil
+        )
+    }
+}
+
+#Preview {
+    NavigationStack {
+        ReviewDetailView(review: Review(
+            id: UUID(),
+            userId: UUID(),
+            targetType: .album,
+            targetId: "1",
+            rating: 4.5,
+            reviewTitle: "最高のアルバム",
+            text: "このアルバムは本当に素晴らしい。全ての曲が心に響く。特に3曲目の「夜に駆ける」は何度聴いても飽きない。",
+            isPublic: true,
+            createdAt: Date(),
+            updatedAt: Date(),
+            albumArt: nil,
+            title: "STRAY SHEEP",
+            artist: "米津玄師"
+        ))
+    }
+}

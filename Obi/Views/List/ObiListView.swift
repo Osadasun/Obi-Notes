@@ -26,7 +26,7 @@ struct ObiListView: View {
             } else {
                 MasonryLayout(spacing: 16) {
                     ForEach(viewModel.reviews) { review in
-                        NavigationLink(destination: destinationView(for: review)) {
+                        NavigationLink(destination: ReviewDetailView(review: review)) {
                             ObiCard(
                                 artworkURL: review.albumArt,
                                 reviewTitle: review.reviewTitle ?? review.title,
@@ -53,47 +53,6 @@ struct ObiListView: View {
         }
     }
 
-    @ViewBuilder
-    private func destinationView(for review: Review) -> some View {
-        switch review.targetType {
-        case .album:
-            if let album = convertReviewToAlbum(review) {
-                AlbumDetailView(album: album)
-            } else {
-                Text("アルバム情報が見つかりません")
-            }
-        case .track:
-            if let track = convertReviewToTrack(review) {
-                TrackDetailView(track: track)
-            } else {
-                Text("トラック情報が見つかりません")
-            }
-        }
-    }
-
-    private func convertReviewToAlbum(_ review: Review) -> Album? {
-        return Album(
-            id: review.targetId,
-            title: review.title,
-            artist: review.artist,
-            artworkURL: review.albumArt,
-            releaseDate: nil,
-            genre: nil,
-            trackCount: nil
-        )
-    }
-
-    private func convertReviewToTrack(_ review: Review) -> Track? {
-        return Track(
-            id: review.targetId,
-            title: review.title,
-            artist: review.artist,
-            albumTitle: nil,
-            artworkURL: review.albumArt,
-            duration: nil,
-            trackNumber: nil
-        )
-    }
 }
 
 // MARK: - Masonry Layout
