@@ -83,22 +83,31 @@ struct ObiCard: View {
 
     // MARK: - Horizontal Layout（横長レイアウト）
     private var horizontalLayout: some View {
-        RoundedRectangle(cornerRadius: 8)
+        // cardHeightに基づいてテキストサイズを動的に変更
+        let titleSize: CGFloat = cardHeight > 300 ? 18 : 15
+        let textSize: CGFloat = cardHeight > 300 ? 14 : 12
+        let artworkSize: CGFloat = cardHeight > 300 ? 72 : 60
+        let spacing: CGFloat = cardHeight > 300 ? 12 : 10
+        let padding: CGFloat = cardHeight > 300 ? 12 : 10
+        let cardHeightValue: CGFloat = cardHeight > 300 ? 96 : 80
+        let cardWidthValue: CGFloat = cardHeight * 0.75
+
+        return RoundedRectangle(cornerRadius: 8)
             .fill(obiColor)
-            .frame(width: cardHeight, height: 96)
+            .frame(width: cardWidthValue, height: cardHeightValue)
             .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
             .overlay(
-                HStack(alignment: .top, spacing: 12) {
-                    artworkView(size: 72)
+                HStack(alignment: .top, spacing: spacing) {
+                    artworkView(size: artworkSize)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(reviewTitle)
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.system(size: titleSize, weight: .bold))
                             .foregroundColor(.white)
                             .lineLimit(1)
 
                         Text(reviewText)
-                            .font(.system(size: 14))
+                            .font(.system(size: textSize))
                             .foregroundColor(.white.opacity(0.9))
                             .lineLimit(2)
 
@@ -107,7 +116,7 @@ struct ObiCard: View {
 
                     Spacer()
                 }
-                .padding(12)
+                .padding(padding)
             )
     }
 
@@ -172,7 +181,17 @@ struct ObiCard: View {
 
     // MARK: - Overlay Layout（オーバーレイレイアウト）
     private var overlayLayout: some View {
-        ZStack(alignment: .bottomLeading) {
+        // cardHeightに基づいてテキストサイズを動的に変更
+        let titleSize: CGFloat = cardHeight > 300 ? 18 : 15
+        let ratingSize: CGFloat = cardHeight > 300 ? 14 : 12
+        let textSize: CGFloat = cardHeight > 300 ? 14 : 12
+        let vSpacing: CGFloat = cardHeight > 300 ? 6 : 4
+        let hSpacing: CGFloat = cardHeight > 300 ? 8 : 6
+        let hPadding: CGFloat = cardHeight > 300 ? 16 : 12
+        let vPadding: CGFloat = cardHeight > 300 ? 12 : 8
+        let minSpacing: CGFloat = cardHeight > 300 ? 8 : 4
+
+        return ZStack(alignment: .bottomLeading) {
             // 背景のアートワーク（正方形）
             Group {
                 if let urlString = artworkURL, let url = URL(string: urlString) {
@@ -201,32 +220,32 @@ struct ObiCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
 
             // 下部の帯（背景 + テキスト）
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .center, spacing: 8) {
+            VStack(alignment: .leading, spacing: vSpacing) {
+                HStack(alignment: .center, spacing: hSpacing) {
                     Text(reviewTitle)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: titleSize, weight: .bold))
                         .foregroundColor(.white)
                         .lineLimit(1)
                         .truncationMode(.tail)
 
-                    Spacer(minLength: 8)
+                    Spacer(minLength: minSpacing)
 
                     if let rating = rating {
                         Text(String(format: "★ %.1f", rating))
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: ratingSize, weight: .semibold))
                             .foregroundColor(.white)
                             .fixedSize()
                     }
                 }
 
                 Text(reviewText)
-                    .font(.system(size: 14))
+                    .font(.system(size: textSize))
                     .foregroundColor(.white.opacity(0.95))
                     .lineLimit(2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, hPadding)
+            .padding(.vertical, vPadding)
             .background(obiColor)
         }
         .frame(width: cardHeight * 0.75, height: cardHeight * 0.75)

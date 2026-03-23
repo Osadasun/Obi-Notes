@@ -184,34 +184,37 @@ struct ObiView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     // 上部の正方形グレー背景エリア（ObiCard表示エリア）
                     GeometryReader { geometry in
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.gray.opacity(0.2))
-                            .frame(width: geometry.size.width, height: geometry.size.width)
-                            .overlay(
-                                // ObiCardを中央に配置
-                                Group {
-                                    if let review = viewModel.latestReview {
-                                        ObiCard(
-                                            artworkURL: review.albumArt,
-                                            reviewTitle: review.title,
-                                            reviewText: review.text ?? "レビューテキストがありません",
-                                            cardHeight: geometry.size.width - 24,
-                                            style: ObiCardStyle.forTargetType(review.targetType),
-                                            rating: review.rating
-                                        )
-                                    } else {
-                                        // レビューがない場合はプレースホルダー
-                                        VStack(spacing: 16) {
-                                            Image(systemName: "music.note.list")
-                                                .font(.system(size: 48))
-                                                .foregroundColor(.gray.opacity(0.5))
-                                            Text("レビューを書いてみましょう")
-                                                .font(.subheadline)
-                                                .foregroundColor(.secondary)
+                        NavigationLink(destination: ObiListView()) {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(width: geometry.size.width, height: geometry.size.width)
+                                .overlay(
+                                    // ObiCardを中央に配置
+                                    Group {
+                                        if let review = viewModel.latestReview {
+                                            ObiCard(
+                                                artworkURL: review.albumArt,
+                                                reviewTitle: review.title,
+                                                reviewText: review.text ?? "レビューテキストがありません",
+                                                cardHeight: geometry.size.width - 24,
+                                                style: ObiCardStyle.forTargetType(review.targetType),
+                                                rating: review.rating
+                                            )
+                                        } else {
+                                            // レビューがない場合はプレースホルダー
+                                            VStack(spacing: 16) {
+                                                Image(systemName: "music.note.list")
+                                                    .font(.system(size: 48))
+                                                    .foregroundColor(.gray.opacity(0.5))
+                                                Text("レビューを書いてみましょう")
+                                                    .font(.subheadline)
+                                                    .foregroundColor(.secondary)
+                                            }
                                         }
                                     }
-                                }
-                            )
+                                )
+                        }
+                        .buttonStyle(.plain)
                     }
                     .aspectRatio(1, contentMode: .fit)
                     .padding(.horizontal, 24)
