@@ -121,7 +121,7 @@ struct TrackDetailView: View {
                         .foregroundColor(.secondary)
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 24)
         }
         .padding(.vertical, 24)
     }
