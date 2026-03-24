@@ -66,7 +66,7 @@ struct MainView: View {
                     // ヘッダー（横並びタブ + プロフィール）
                     HStack(spacing: 0) {
                         // 横並びタブ
-                        HorizontalTabBar(selectedFeed: $selectedFeed)
+                        HorizontalTabBar(selectedFeed: $selectedFeed, scrollPosition: $scrollPosition)
 
                         Spacer()
 
@@ -214,7 +214,7 @@ struct MainView: View {
         VStack(spacing: 0) {
             Spacer()
 
-            HStack(spacing: 16) {
+            HStack(alignment: .bottom, spacing: 16) {
                 // 左側: Addボタン / メニュー
                 ZStack {
                     // メニューコンテンツ（Obiタブでメニュー表示時）
@@ -317,8 +317,22 @@ struct MainView: View {
                 // 右側: 検索ボタン → 検索フィールド（progressに応じて変化）
                 Button(action: {
                     if buttonTransitionProgress < 0.5 {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedFeed = .explore
+                        // メニューが開いていたら閉じる
+                        if showMenu {
+                            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                showMenu = false
+                            }
+                            // メニューが閉じるのを待ってからスクロール
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    scrollPosition = 1
+                                }
+                            }
+                        } else {
+                            // ScrollViewをスクロールさせてExploreに移動
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                scrollPosition = 1
+                            }
                         }
                     }
                 }) {
@@ -346,7 +360,7 @@ struct MainView: View {
                 .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
             }
             .padding(.horizontal, 24)
-            .padding(.bottom, 30)
+            .padding(.bottom, 0)
         }
     }
 }
@@ -360,12 +374,16 @@ enum Feed: String, CaseIterable {
 // MARK: - Horizontal Tab Bar
 struct HorizontalTabBar: View {
     @Binding var selectedFeed: Feed
+    @Binding var scrollPosition: Int?
 
     var body: some View {
         HStack(spacing: 24) {
             ForEach(Feed.allCases, id: \.self) { feed in
                 Button(action: {
-                    selectedFeed = feed
+                    // スクロールアニメーションで切り替え
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        scrollPosition = feed == .obi ? 0 : 1
+                    }
                 }) {
                     Text(feed.rawValue)
                         .font(.title)
@@ -409,7 +427,7 @@ struct ObiView: View {
     @StateObject private var viewModel = ObiListViewModel()
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     // 上部の正方形グレー背景エリア（ObiCard表示エリア）
                     GeometryReader { geometry in

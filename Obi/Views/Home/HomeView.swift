@@ -12,7 +12,7 @@ struct HomeView: View {
     let bottomSpacerHeight: CGFloat
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 24) {
                 // 最新のレビューセクション
                 SectionHeaderView(title: "最新のレビュー", showMore: true)
