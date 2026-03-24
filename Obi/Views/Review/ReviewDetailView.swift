@@ -79,90 +79,56 @@ struct ReviewDetailView: View {
     // MARK: - Review Content
 
     private var reviewContent: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        VStack(alignment: .leading, spacing: 20) {
             // 評価
-            VStack(alignment: .leading, spacing: 12) {
-                Text("評価")
-                    .font(.headline)
-
-                HStack(spacing: 8) {
-                    ForEach(1...5, id: \.self) { index in
-                        Image(systemName: index <= Int(review.rating) ? "star.fill" : "star")
-                            .font(.title2)
-                            .foregroundColor(index <= Int(review.rating) ? .yellow : .gray)
-                    }
-
-                    Text(String(format: "%.1f", review.rating))
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                        .padding(.leading, 8)
+            HStack(spacing: 8) {
+                ForEach(1...5, id: \.self) { index in
+                    Image(systemName: index <= Int(review.rating) ? "star.fill" : "star")
+                        .font(.title2)
+                        .foregroundColor(index <= Int(review.rating) ? .yellow : .gray)
                 }
+
+                Text(String(format: "%.1f", review.rating))
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .padding(.leading, 8)
             }
 
-            Divider()
-
-            // レビュータイトル
+            // レビュータイトル（見出し）
             if let reviewTitle = review.reviewTitle {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("タイトル")
-                        .font(.headline)
-
-                    Text(reviewTitle)
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                }
-
-                Divider()
+                Text(reviewTitle)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .padding(.top, 8)
             }
 
             // レビュー本文
-            VStack(alignment: .leading, spacing: 12) {
-                Text("レビュー")
-                    .font(.headline)
-
-                if let reviewText = review.text {
-                    Text(reviewText)
-                        .font(.body)
-                        .lineSpacing(6)
-                } else {
-                    Text("レビュー本文がありません")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .italic()
-                }
+            if let reviewText = review.text {
+                Text(reviewText)
+                    .font(.body)
+                    .lineSpacing(6)
+                    .foregroundColor(.primary)
+            } else {
+                Text("レビュー本文がありません")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .italic()
             }
-
-            Divider()
 
             // 投稿日時
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("投稿日")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-
-                    Spacer()
-
-                    Text(review.createdAt.formatted(date: .long, time: .shortened))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+            VStack(alignment: .leading, spacing: 4) {
+                Text("投稿日: \(review.createdAt.formatted(date: .long, time: .shortened))")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
 
                 if review.updatedAt != review.createdAt {
-                    HStack {
-                        Text("更新日")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        Spacer()
-
-                        Text(review.updatedAt.formatted(date: .long, time: .shortened))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+                    Text("更新日: \(review.updatedAt.formatted(date: .long, time: .shortened))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
+            .padding(.top, 16)
         }
         .padding()
     }
