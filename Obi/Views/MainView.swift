@@ -19,10 +19,18 @@ struct ScaleButtonStyle: ButtonStyle {
 
 struct MainView: View {
     @StateObject private var authViewModel = AuthenticationViewModel()
-    @State private var selectedFeed: Feed = .home
+    @State private var selectedFeed: Feed = .obi
     @State private var showSearch = false
     @State private var bottomSpacerHeight: CGFloat = 50
     @State private var showProfile = false
+    @State private var showMenu = false
+    @State private var showCreateList = false
+    @State private var showSearchSheet = false
+    @State private var isAddButtonPressed = false
+    @State private var searchText = ""
+    @State private var buttonTransitionProgress: CGFloat = 0.0 // ボタン変形用の進行度
+    @State private var scrollPosition: Int? = 0 // ScrollViewの位置
+    @Namespace private var animation
 
     // UIPageViewControllerの内部余白を計算
     private func calculateBottomPadding(safeAreaBottom: CGFloat) -> CGFloat {
@@ -53,8 +61,7 @@ struct MainView: View {
 
     private var mainContent: some View {
         NavigationStack {
-            ZStack(alignment: .bottomTrailing) {
-                // メインコンテンツ
+            ZStack(alignment: .bottom) {
                 VStack(spacing: 0) {
                     // ヘッダー（横並びタブ + プロフィール）
                     HStack(spacing: 0) {
@@ -85,37 +92,23 @@ struct MainView: View {
                     Divider()
 
                     // コンテンツ表示エリア
-                    GeometryReader { geometry in
-                        PageViewController(
-                            pages: [
-                                AnyView(HomeView(bottomSpacerHeight: bottomSpacerHeight)),
-                                AnyView(ObiView(bottomSpacerHeight: bottomSpacerHeight))
-                            ],
-                            currentPage: Binding(
-                                get: { selectedFeed == .home ? 0 : 1 },
-                                set: { selectedFeed = $0 == 0 ? .home : .obi }
-                            )
-                        )
-                        .ignoresSafeArea(.all)
-                        .padding(.bottom, calculateBottomPadding(safeAreaBottom: geometry.safeAreaInsets.bottom))
-                        .onAppear {
-                            // スペーサーの高さを動的に設定
-                            bottomSpacerHeight = abs(calculateBottomPadding(safeAreaBottom: geometry.safeAreaInsets.bottom))
-                        }
-                    }
+                    pagingScrollView
                 }
-                .ignoresSafeArea(.all, edges: .bottom)
+                .ignoresSafeArea(edges: .bottom)
 
-                // フローティングアクションボタン
-                FloatingButton(
-                    icon: "magnifyingglass",
-                    backgroundColor: .white,
-                    foregroundColor: .purple
-                ) {
-                    showSearch = true
+                // 背景オーバーレイ（メニュー表示時）
+                if showMenu {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                showMenu = false
+                            }
+                        }
                 }
-                .padding(.trailing, 20)
-                .padding(.bottom, 20)
+
+                // 下部ボタンエリア
+                bottomButtons
             }
             .sheet(isPresented: $showSearch) {
                 SearchView()
@@ -125,14 +118,243 @@ struct MainView: View {
                     ProfileView(authViewModel: authViewModel)
                 }
             }
+            .sheet(isPresented: $showCreateList) {
+                CreateListView()
+            }
+            .sheet(isPresented: $showSearchSheet) {
+                SearchView()
+            }
+        }
+    }
+
+    private var pagingScrollView: some View {
+        GeometryReader { geometry in
+            scrollViewContent(geometry: geometry)
+        }
+    }
+
+    private func scrollViewContent(geometry: GeometryProxy) -> some View {
+        let pageWidth = geometry.size.width
+        let bottomPadding = calculateBottomPadding(safeAreaBottom: geometry.safeAreaInsets.bottom)
+
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 0) {
+                ObiView(bottomSpacerHeight: bottomSpacerHeight)
+                    .containerRelativeFrame(.horizontal)
+                    .id(0)
+
+                HomeView(bottomSpacerHeight: bottomSpacerHeight)
+                    .containerRelativeFrame(.horizontal)
+                    .id(1)
+            }
+            .scrollTargetLayout()
+            .background(
+                GeometryReader { scrollGeo in
+                    Color.clear
+                        .onChange(of: scrollGeo.frame(in: .global).minX) { _, minX in
+                            // HStack全体の座標からprogressを計算
+                            let progress = -minX / pageWidth
+                            let clampedProgress = max(0.0, min(1.0, progress))
+                            buttonTransitionProgress = clampedProgress
+                            print("📊 HStack minX: \(minX), progress: \(clampedProgress)")
+                        }
+                }
+            )
+        }
+        .scrollPosition(id: $scrollPosition)
+        .scrollTargetBehavior(PagingScrollTargetBehavior())
+        .ignoresSafeArea()
+        .padding(EdgeInsets(top: 0, leading: 0, bottom: bottomPadding, trailing: 0))
+        .onChange(of: scrollPosition) { _, newValue in
+            updateFeedFromScroll(newValue)
+        }
+        .onChange(of: selectedFeed) { _, newValue in
+            updateScrollFromFeed(newValue)
+        }
+        .onAppear {
+            setupInitialState(bottomPadding: bottomPadding)
+        }
+    }
+
+    private func updateProgressFromScroll(minX: CGFloat, pageWidth: CGFloat) {
+        // 中央からのズレを計算（0なら中央、-1なら次のページ）
+        let progress = -minX / pageWidth
+        let clampedProgress = max(0.0, min(1.0, progress))
+
+        print("📊 minX: \(minX), progress: \(clampedProgress)")
+
+        // アニメーションなしで即座に反映（スワイプに追従）
+        buttonTransitionProgress = clampedProgress
+    }
+
+    private func updateProgress(offset: CGFloat, pageWidth: CGFloat) {
+        let progress = -offset / pageWidth
+        let clampedProgress = max(0.0, min(1.0, progress))
+        print("📊 offset: \(offset), width: \(pageWidth), progress: \(clampedProgress)")
+        buttonTransitionProgress = clampedProgress
+    }
+
+    private func updateFeedFromScroll(_ position: Int?) {
+        guard let position = position else { return }
+        selectedFeed = position == 0 ? .obi : .explore
+    }
+
+    private func updateScrollFromFeed(_ feed: Feed) {
+        scrollPosition = feed == .obi ? 0 : 1
+    }
+
+    private func setupInitialState(bottomPadding: CGFloat) {
+        bottomSpacerHeight = abs(bottomPadding)
+        scrollPosition = selectedFeed == .explore ? 1 : 0
+        buttonTransitionProgress = selectedFeed == .explore ? 1.0 : 0.0
+    }
+
+    @ViewBuilder
+    private var bottomButtons: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            HStack(spacing: 16) {
+                // 左側: Addボタン / メニュー
+                ZStack {
+                    // メニューコンテンツ（Obiタブでメニュー表示時）
+                    if showMenu && selectedFeed == .obi {
+                        VStack(spacing: 0) {
+                            // レビューボタン
+                            Button(action: {
+                                showMenu = false
+                                showSearchSheet = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "star.bubble")
+                                        .font(.title3)
+                                    Text("レビュー")
+                                        .font(.headline)
+                                    Spacer()
+                                }
+                                .foregroundColor(.white)
+                                .padding(.vertical, 20)
+                                .padding(.horizontal, 24)
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+
+                            Divider()
+                                .background(Color.white.opacity(0.2))
+
+                            // リストボタン
+                            Button(action: {
+                                showMenu = false
+                                showCreateList = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "list.bullet.rectangle")
+                                        .font(.title3)
+                                    Text("リスト")
+                                        .font(.headline)
+                                    Spacer()
+                                }
+                                .foregroundColor(.white)
+                                .padding(.vertical, 20)
+                                .padding(.horizontal, 24)
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                        }
+                        .transition(.opacity)
+                    }
+
+                    // Addボタン（メニュー非表示時）
+                    if !showMenu {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                showMenu = true
+                            }
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(.white)
+
+                                // "Add"テキスト: progressが進むとフェードアウト
+                                if buttonTransitionProgress < 0.8 {
+                                    Text("Add")
+                                        .font(.headline)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.white)
+                                        .opacity(Double(1.0 - min(buttonTransitionProgress / 0.8, 1.0)))
+                                }
+                            }
+                            // パディング: progressに応じて縮小
+                            .padding(.vertical, 16 - buttonTransitionProgress * 2)
+                            .padding(.horizontal, 32 - buttonTransitionProgress * 18)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .simultaneousGesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { _ in
+                                    if !isAddButtonPressed {
+                                        withAnimation(.easeInOut(duration: 0.1)) {
+                                            isAddButtonPressed = true
+                                        }
+                                    }
+                                }
+                                .onEnded { _ in
+                                    withAnimation(.easeInOut(duration: 0.1)) {
+                                        isAddButtonPressed = false
+                                    }
+                                }
+                        )
+                        .scaleEffect(isAddButtonPressed ? 0.95 : 1.0)
+                        .transition(.opacity)
+                    }
+                }
+                .background(Color.black)
+                .cornerRadius(showMenu ? 16 : (30 - buttonTransitionProgress * 6))
+                .shadow(color: .black.opacity(showMenu ? 0 : 0.3), radius: 10, x: 0, y: 5)
+                .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showMenu)
+
+                Spacer()
+
+                // 右側: 検索ボタン → 検索フィールド（progressに応じて変化）
+                Button(action: {
+                    if buttonTransitionProgress < 0.5 {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedFeed = .explore
+                        }
+                    }
+                }) {
+                    HStack(spacing: 12 * buttonTransitionProgress) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.white.opacity(1.0 - buttonTransitionProgress * 0.4))
+
+                        // テキストフィールド: 常に存在するがopacityと幅で制御
+                        TextField("検索", text: $searchText)
+                            .foregroundColor(.white)
+                            .font(.body)
+                            .accentColor(.white)
+                            .opacity(Double(max((buttonTransitionProgress - 0.2) / 0.8, 0.0)))
+                            .frame(width: max(0, 200 * (buttonTransitionProgress - 0.1)))
+                    }
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 14 + buttonTransitionProgress * 6)
+                }
+                .frame(minWidth: 48)
+                .disabled(buttonTransitionProgress >= 0.5)
+                .buttonStyle(PlainButtonStyle())
+                .background(Color.black)
+                .cornerRadius(30)
+                .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 30)
         }
     }
 }
 
 // MARK: - Feed Type
 enum Feed: String, CaseIterable {
-    case home = "Home"
     case obi = "Obi"
+    case explore = "Explore"
 }
 
 // MARK: - Horizontal Tab Bar
@@ -185,15 +407,9 @@ struct FloatingButton: View {
 struct ObiView: View {
     let bottomSpacerHeight: CGFloat
     @StateObject private var viewModel = ObiListViewModel()
-    @State private var showCreateList = false
-    @State private var showMenu = false
-    @State private var showSearchSheet = false
-    @State private var isAddButtonPressed = false
-    @Namespace private var animation
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView {
+        ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     // 上部の正方形グレー背景エリア（ObiCard表示エリア）
                     GeometryReader { geometry in
@@ -304,121 +520,6 @@ struct ObiView: View {
             .refreshable {
                 await viewModel.loadListCounts()
             }
-
-            // 背景オーバーレイ
-            if showMenu {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
-                            showMenu = false
-                        }
-                    }
-            }
-
-            // フローティングボタン / メニュー
-            VStack(spacing: 0) {
-                Spacer()
-
-                ZStack {
-                    // メニューコンテンツ
-                    if showMenu {
-                        VStack(spacing: 0) {
-                            // レビューボタン
-                            Button(action: {
-                                showMenu = false
-                                showSearchSheet = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "star.bubble")
-                                        .font(.title3)
-                                    Text("レビュー")
-                                        .font(.headline)
-                                    Spacer()
-                                }
-                                .foregroundColor(.white)
-                                .padding(.vertical, 20)
-                                .padding(.horizontal, 24)
-                            }
-                            .buttonStyle(ScaleButtonStyle())
-
-                            Divider()
-                                .background(Color.white.opacity(0.2))
-
-                            // リストボタン
-                            Button(action: {
-                                showMenu = false
-                                showCreateList = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "list.bullet.rectangle")
-                                        .font(.title3)
-                                    Text("リスト")
-                                        .font(.headline)
-                                    Spacer()
-                                }
-                                .foregroundColor(.white)
-                                .padding(.vertical, 20)
-                                .padding(.horizontal, 24)
-                            }
-                            .buttonStyle(ScaleButtonStyle())
-                        }
-                        .transition(.opacity)
-                    }
-
-                    // フローティングAddボタン
-                    if !showMenu {
-                        Button(action: {
-                            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
-                                showMenu = true
-                            }
-                        }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "plus")
-                                    .font(.title3)
-                                    .fontWeight(.semibold)
-                                Text("Add")
-                                    .font(.headline)
-                                    .fontWeight(.semibold)
-                            }
-                            .foregroundColor(.white)
-                            .padding(.vertical, 16)
-                            .padding(.horizontal, 32)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .simultaneousGesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { _ in
-                                    if !isAddButtonPressed {
-                                        withAnimation(.easeInOut(duration: 0.1)) {
-                                            isAddButtonPressed = true
-                                        }
-                                    }
-                                }
-                                .onEnded { _ in
-                                    withAnimation(.easeInOut(duration: 0.1)) {
-                                        isAddButtonPressed = false
-                                    }
-                                }
-                        )
-                        .transition(.opacity)
-                    }
-                }
-                .background(Color.black)
-                .cornerRadius(showMenu ? 16 : 30)
-                .matchedGeometryEffect(id: "addButton", in: animation)
-                .shadow(color: .black.opacity(showMenu ? 0 : 0.3), radius: 10, x: 0, y: 5)
-                .scaleEffect(isAddButtonPressed && !showMenu ? 0.95 : 1.0)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 30)
-            }
-        }
-        .sheet(isPresented: $showCreateList) {
-            CreateListView()
-        }
-        .sheet(isPresented: $showSearchSheet) {
-            SearchView()
-        }
     }
 }
 
