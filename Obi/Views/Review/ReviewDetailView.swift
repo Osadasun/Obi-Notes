@@ -101,6 +101,7 @@ struct ReviewDetailView: View {
                     .font(.title2)
                     .fontWeight(.bold)
                     .padding(.top, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             // レビュー本文
@@ -109,11 +110,13 @@ struct ReviewDetailView: View {
                     .font(.body)
                     .lineSpacing(6)
                     .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 Text("レビュー本文がありません")
                     .font(.body)
                     .foregroundColor(.secondary)
                     .italic()
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             // 投稿日時
@@ -129,8 +132,10 @@ struct ReviewDetailView: View {
                 }
             }
             .padding(.top, 16)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
