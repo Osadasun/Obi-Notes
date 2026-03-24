@@ -8,6 +8,15 @@
 import SwiftUI
 import Combine
 
+// MARK: - Scale Button Style
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
 struct MainView: View {
     @StateObject private var authViewModel = AuthenticationViewModel()
     @State private var selectedFeed: Feed = .home
@@ -177,9 +186,13 @@ struct ObiView: View {
     let bottomSpacerHeight: CGFloat
     @StateObject private var viewModel = ObiListViewModel()
     @State private var showCreateList = false
+    @State private var showMenu = false
+    @State private var showSearchSheet = false
+    @State private var isAddButtonPressed = false
+    @Namespace private var animation
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        ZStack(alignment: .bottom) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     // 上部の正方形グレー背景エリア（ObiCard表示エリア）
@@ -292,19 +305,119 @@ struct ObiView: View {
                 await viewModel.loadListCounts()
             }
 
-            // フローティングアクションボタン（リスト作成）
-            FloatingButton(
-                icon: "plus",
-                backgroundColor: .white,
-                foregroundColor: .purple
-            ) {
-                showCreateList = true
+            // 背景オーバーレイ
+            if showMenu {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                            showMenu = false
+                        }
+                    }
             }
-            .padding(.trailing, 20)
-            .padding(.bottom, 20)
+
+            // フローティングボタン / メニュー
+            VStack(spacing: 0) {
+                Spacer()
+
+                ZStack {
+                    // メニューコンテンツ
+                    if showMenu {
+                        VStack(spacing: 0) {
+                            // レビューボタン
+                            Button(action: {
+                                showMenu = false
+                                showSearchSheet = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "star.bubble")
+                                        .font(.title3)
+                                    Text("レビュー")
+                                        .font(.headline)
+                                    Spacer()
+                                }
+                                .foregroundColor(.white)
+                                .padding(.vertical, 20)
+                                .padding(.horizontal, 24)
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+
+                            Divider()
+                                .background(Color.white.opacity(0.2))
+
+                            // リストボタン
+                            Button(action: {
+                                showMenu = false
+                                showCreateList = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "list.bullet.rectangle")
+                                        .font(.title3)
+                                    Text("リスト")
+                                        .font(.headline)
+                                    Spacer()
+                                }
+                                .foregroundColor(.white)
+                                .padding(.vertical, 20)
+                                .padding(.horizontal, 24)
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                        }
+                        .transition(.opacity)
+                    }
+
+                    // フローティングAddボタン
+                    if !showMenu {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                showMenu = true
+                            }
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "plus")
+                                    .font(.title3)
+                                    .fontWeight(.semibold)
+                                Text("Add")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(.white)
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 32)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .simultaneousGesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { _ in
+                                    if !isAddButtonPressed {
+                                        withAnimation(.easeInOut(duration: 0.1)) {
+                                            isAddButtonPressed = true
+                                        }
+                                    }
+                                }
+                                .onEnded { _ in
+                                    withAnimation(.easeInOut(duration: 0.1)) {
+                                        isAddButtonPressed = false
+                                    }
+                                }
+                        )
+                        .transition(.opacity)
+                    }
+                }
+                .background(Color.black)
+                .cornerRadius(showMenu ? 16 : 30)
+                .matchedGeometryEffect(id: "addButton", in: animation)
+                .shadow(color: .black.opacity(showMenu ? 0 : 0.3), radius: 10, x: 0, y: 5)
+                .scaleEffect(isAddButtonPressed && !showMenu ? 0.95 : 1.0)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 30)
+            }
         }
         .sheet(isPresented: $showCreateList) {
             CreateListView()
+        }
+        .sheet(isPresented: $showSearchSheet) {
+            SearchView()
         }
     }
 }

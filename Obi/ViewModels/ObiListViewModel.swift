@@ -43,6 +43,9 @@ class ObiListViewModel: ObservableObject {
             let uniqueAlbums = Set(reviews.map { $0.targetId })
             reviewedCount = uniqueAlbums.count
 
+            // レビューからアートワークを取得（最大3件）
+            reviewedArtworks = Array(reviews.prefix(3).map { $0.albumArt })
+
             // 最新のレビューを保持（ObiCard表示用）
             latestReview = reviews.first
 
@@ -58,10 +61,7 @@ class ObiListViewModel: ObservableObject {
 
                 switch list.defaultType {
                 case .reviewed:
-                    // レビュー済みは上で計算済み（reviewedCount）
-                    // レビューからアートワークを取得
-                    let reviewArtworks = reviews.prefix(3).map { $0.albumArt }
-                    reviewedArtworks = Array(reviewArtworks)
+                    // レビュー済みは上で計算済み（reviewedCount & reviewedArtworks）
                     break
                 case .favorite:
                     favoriteCount = items.count
