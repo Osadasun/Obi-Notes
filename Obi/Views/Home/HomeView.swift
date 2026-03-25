@@ -70,7 +70,7 @@ struct HomeView: View {
 
                 // TabViewの下部拡張分のスペーサー
                 Color.clear
-                    .frame(height: bottomSpacerHeight)
+                    .frame(height: 120)
             }
             .padding(.top, 40)
         }

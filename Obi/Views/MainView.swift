@@ -21,7 +21,7 @@ struct MainView: View {
     @StateObject private var authViewModel = AuthenticationViewModel()
     @State private var selectedFeed: Feed = .obi
     @State private var showSearch = false
-    @State private var bottomSpacerHeight: CGFloat = 50
+    @State private var bottomSpacerHeight: CGFloat = 100
     @State private var showProfile = false
     @State private var showMenu = false
     @State private var showCreateList = false
@@ -529,7 +529,7 @@ struct ObiView: View {
 
                     // TabViewの下部拡張分のスペーサー
                     Color.clear
-                        .frame(height: bottomSpacerHeight)
+                        .frame(height: 120)
                 }
             }
             .task {
