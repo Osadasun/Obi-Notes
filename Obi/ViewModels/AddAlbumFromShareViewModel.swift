@@ -11,7 +11,10 @@ import Combine
 @MainActor
 class AddAlbumFromShareViewModel: ObservableObject {
     @Published var album: Album?
+    @Published var lists: [MusicList] = []
+    @Published var selectedList: MusicList?
     @Published var isLoading = false
+    @Published var isLoadingLists = false
     @Published var isAdding = false
     @Published var addSuccess = false
     @Published var errorMessage: String?
@@ -41,10 +44,31 @@ class AddAlbumFromShareViewModel: ObservableObject {
         isLoading = false
     }
 
-    func addToListenedList() async {
-        guard let album = album else { return }
+    func loadLists() async {
         guard let userId = UserManager.shared.currentUserId else {
             errorMessage = "ログインしてください"
+            return
+        }
+
+        isLoadingLists = true
+
+        do {
+            lists = try await supabaseService.fetchUserLists(userId: userId)
+            // デフォルトで「聴いた」リストを選択
+            selectedList = lists.first(where: { $0.defaultType == .listened })
+            print("✅ [AddAlbumFromShare] Loaded \(lists.count) lists")
+        } catch {
+            print("❌ [AddAlbumFromShare] Failed to load lists: \(error)")
+            errorMessage = "リストの取得に失敗しました"
+        }
+
+        isLoadingLists = false
+    }
+
+    func addToSelectedList() async {
+        guard let album = album else { return }
+        guard let list = selectedList else {
+            errorMessage = "リストを選択してください"
             return
         }
 
@@ -52,25 +76,17 @@ class AddAlbumFromShareViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            // 「聴いた」リストを取得
-            let lists = try await supabaseService.fetchUserLists(userId: userId)
-            guard let listenedList = lists.first(where: { $0.defaultType == .listened }) else {
-                errorMessage = "「聴いた」リストが見つかりません"
-                isAdding = false
-                return
-            }
-
             // 重複チェック
-            let existingItems = try await supabaseService.fetchListItems(listId: listenedList.id)
+            let existingItems = try await supabaseService.fetchListItems(listId: list.id)
             if existingItems.contains(where: { $0.targetId == album.id }) {
-                errorMessage = "既にリストに追加されています"
+                errorMessage = "既にこのリストに追加されています"
                 isAdding = false
                 return
             }
 
             // リストに追加
             try await supabaseService.addToList(
-                listId: listenedList.id,
+                listId: list.id,
                 targetType: .album,
                 targetId: album.id,
                 title: album.title,
@@ -78,7 +94,7 @@ class AddAlbumFromShareViewModel: ObservableObject {
                 artworkURL: album.artworkURL300
             )
 
-            print("✅ [AddAlbumFromShare] Album added to listened list")
+            print("✅ [AddAlbumFromShare] Album added to list: \(list.name)")
             addSuccess = true
 
             // App Groupsから削除

@@ -72,22 +72,58 @@ struct AddAlbumFromShareView: View {
                             }
                             .padding(.horizontal)
 
+                            // リスト選択
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("追加先のリスト")
+                                    .font(.headline)
+                                    .padding(.horizontal, 24)
+
+                                if viewModel.isLoadingLists {
+                                    HStack {
+                                        Spacer()
+                                        ProgressView()
+                                        Spacer()
+                                    }
+                                    .padding()
+                                } else {
+                                    ForEach(viewModel.lists) { list in
+                                        Button(action: {
+                                            viewModel.selectedList = list
+                                        }) {
+                                            HStack {
+                                                Image(systemName: viewModel.selectedList?.id == list.id ? "checkmark.circle.fill" : "circle")
+                                                    .foregroundColor(viewModel.selectedList?.id == list.id ? .purple : .gray)
+
+                                                Text(list.name)
+                                                    .foregroundColor(.primary)
+
+                                                Spacer()
+                                            }
+                                            .padding()
+                                            .background(Color.gray.opacity(0.1))
+                                            .cornerRadius(8)
+                                        }
+                                        .padding(.horizontal, 24)
+                                    }
+                                }
+                            }
+
                             // 追加ボタン
                             Button(action: {
                                 Task {
-                                    await viewModel.addToListenedList()
+                                    await viewModel.addToSelectedList()
                                 }
                             }) {
-                                Text("「聴いた」リストに追加")
+                                Text("追加")
                                     .font(.headline)
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .padding()
-                                    .background(Color.purple)
+                                    .background(viewModel.selectedList != nil ? Color.purple : Color.gray)
                                     .cornerRadius(12)
                             }
                             .padding(.horizontal, 24)
-                            .disabled(viewModel.isAdding)
+                            .disabled(viewModel.isAdding || viewModel.selectedList == nil)
 
                             if viewModel.isAdding {
                                 ProgressView("追加中...")
@@ -119,6 +155,7 @@ struct AddAlbumFromShareView: View {
         }
         .task {
             await viewModel.loadAlbum()
+            await viewModel.loadLists()
         }
     }
 }
