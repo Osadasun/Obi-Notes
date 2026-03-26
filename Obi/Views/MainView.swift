@@ -570,7 +570,6 @@ struct ObiView: View {
                                         AlbumCard(
                                             title: album.name,
                                             artistName: album.artistName,
-                                            count: viewModel.userAlbumCounts[album.id] ?? 0,
                                             colorHex: album.colorHex
                                         )
                                     }
