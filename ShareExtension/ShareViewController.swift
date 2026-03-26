@@ -63,18 +63,56 @@ class ShareViewController: UIViewController {
     }
 
     private func showShareView(with url: URL) {
-        let shareView = ShareExtensionView(url: url) { [weak self] success in
-            self?.completeRequest(success: success)
-        }
-
-        let hostingController = UIHostingController(rootView: shareView)
+        // SwiftUI Viewを表示
+        let hostingController = UIHostingController(rootView: ShareExtensionView())
         hostingController.view.backgroundColor = .systemBackground
-
         addChild(hostingController)
         view.addSubview(hostingController.view)
         hostingController.view.frame = view.bounds
-        hostingController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         hostingController.didMove(toParent: self)
+
+        // URLを解析してアルバムIDを取得
+        guard let parsed = MusicURLParser.parse(url: url),
+              parsed.service == .appleMusic,
+              let albumId = parsed.albumId else {
+            showError(message: "Apple Musicのアルバムではありません")
+            return
+        }
+
+        print("📋 [ShareViewController] Album ID: \(albumId)")
+
+        // アルバムIDをApp Groupsに保存
+        let sharedAlbum = SharedAlbumData(
+            albumId: albumId,
+            title: "読み込み中...",
+            artist: "不明",
+            artworkURL: nil
+        )
+        AppGroupManager.shared.addPendingAlbum(sharedAlbum)
+
+        // メインアプリを開く
+        if let appURL = URL(string: "obi://add-album?id=\(albumId)") {
+            openURL(appURL)
+        }
+
+        // 少し遅延させてからShare Extensionを閉じる
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.completeRequest(success: true)
+        }
+    }
+
+    private func openURL(_ url: URL) {
+        var responder: UIResponder? = self
+        while let current = responder {
+            if let application = current as? UIApplication {
+                application.open(url, options: [:], completionHandler: nil)
+                return
+            }
+            responder = current.next
+        }
+
+        // UIApplicationが見つからない場合はextensionContextを使用
+        extensionContext?.open(url, completionHandler: nil)
     }
 
     private func showError(message: String) {

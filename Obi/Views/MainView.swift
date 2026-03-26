@@ -20,6 +20,7 @@ struct ScaleButtonStyle: ButtonStyle {
 struct MainView: View {
     @StateObject private var authViewModel = AuthenticationViewModel()
     @StateObject private var pendingAlbumProcessor = PendingAlbumProcessor.shared
+    @EnvironmentObject var deepLinkManager: DeepLinkManager
     @State private var selectedFeed: Feed = .obi
     @State private var showSearch = false
     @State private var bottomSpacerHeight: CGFloat = 100
@@ -31,6 +32,7 @@ struct MainView: View {
     @State private var searchText = ""
     @State private var buttonTransitionProgress: CGFloat = 0.0 // ボタン変形用の進行度
     @State private var scrollPosition: Int? = 0 // ScrollViewの位置
+    @State private var showAddAlbumSheet = false
     @Namespace private var animation
 
     // UIPageViewControllerの内部余白を計算
@@ -53,12 +55,6 @@ struct MainView: View {
             } else if authViewModel.isAuthenticated {
                 // 認証済み - メインビュー表示
                 mainContent
-                    .task {
-                        // 認証が完全に完了するまで少し待つ
-                        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5秒
-                        // Share Extensionから追加された保留中のアルバムを処理
-                        await pendingAlbumProcessor.processPendingAlbums()
-                    }
             } else {
                 // 未認証 - サインイン画面表示
                 SignInView(authViewModel: authViewModel)
@@ -76,23 +72,6 @@ struct MainView: View {
                         HorizontalTabBar(selectedFeed: $selectedFeed, scrollPosition: $scrollPosition)
 
                         Spacer()
-
-                        // デバッグ: 保留中アルバム処理ボタン
-                        Button(action: {
-                            Task {
-                                await pendingAlbumProcessor.processPendingAlbums()
-                            }
-                        }) {
-                            Circle()
-                                .fill(Color.blue.opacity(0.2))
-                                .frame(width: 32, height: 32)
-                                .overlay(
-                                    Image(systemName: "arrow.clockwise")
-                                        .font(.caption)
-                                        .foregroundColor(.blue)
-                                )
-                        }
-                        .padding(.trailing, 8)
 
                         // プロフィールボタン
                         Button(action: {
@@ -197,6 +176,19 @@ struct MainView: View {
         }
         .onAppear {
             setupInitialState(bottomPadding: bottomPadding)
+        }
+        .sheet(isPresented: $showAddAlbumSheet) {
+            if let albumId = deepLinkManager.pendingAlbumId {
+                AddAlbumFromShareView(albumId: albumId)
+                    .onDisappear {
+                        deepLinkManager.clearPendingAlbumId()
+                    }
+            }
+        }
+        .onChange(of: deepLinkManager.pendingAlbumId) { oldValue, newValue in
+            if newValue != nil {
+                showAddAlbumSheet = true
+            }
         }
     }
 
