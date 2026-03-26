@@ -11,6 +11,7 @@
 		AEA229542F655DF000EB1ED4 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = AEA229532F655DF000EB1ED4 /* PostgREST */; };
 		AEA229562F655DF000EB1ED4 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = AEA229552F655DF000EB1ED4 /* Storage */; };
 		AEA229582F655DF000EB1ED4 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = AEA229572F655DF000EB1ED4 /* Supabase */; };
+		AEBD0B2A2F7407ED00A31390 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AEBD0B202F7407ED00A31390 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,12 +29,34 @@
 			remoteGlobalIDString = AEA228F72F63120E00EB1ED4;
 			remoteInfo = Obi;
 		};
+		AEBD0B282F7407ED00A31390 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AEA228F02F63120E00EB1ED4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AEBD0B1F2F7407ED00A31390;
+			remoteInfo = ShareExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AEBD0B2F2F7407ED00A31390 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AEBD0B2A2F7407ED00A31390 /* ShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		AEA228F82F63120E00EB1ED4 /* Obi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Obi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AEA229052F63120F00EB1ED4 /* ObiTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ObiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AEA2290F2F63120F00EB1ED4 /* ObiUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ObiUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AEBD0B202F7407ED00A31390 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -44,6 +67,21 @@
 			);
 			target = AEA228F72F63120E00EB1ED4 /* Obi */;
 		};
+		AEBD0B2E2F7407ED00A31390 /* Exceptions for "ShareExtension" folder in "ShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = AEBD0B1F2F7407ED00A31390 /* ShareExtension */;
+		};
+		AEBD0B3D2F740AA900A31390 /* Exceptions for "Obi" folder in "ShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Shared/AppGroupManager.swift,
+				Shared/SharedAlbumData.swift,
+			);
+			target = AEBD0B1F2F7407ED00A31390 /* ShareExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -51,6 +89,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				AE4A8B9C2F664F0B006617AC /* Exceptions for "Obi" folder in "Obi" target */,
+				AEBD0B3D2F740AA900A31390 /* Exceptions for "Obi" folder in "ShareExtension" target */,
 			);
 			path = Obi;
 			sourceTree = "<group>";
@@ -63,6 +102,14 @@
 		AEA229122F63120F00EB1ED4 /* ObiUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ObiUITests;
+			sourceTree = "<group>";
+		};
+		AEBD0B212F7407ED00A31390 /* ShareExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AEBD0B2E2F7407ED00A31390 /* Exceptions for "ShareExtension" folder in "ShareExtension" target */,
+			);
+			path = ShareExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -93,6 +140,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AEBD0B1D2F7407ED00A31390 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -102,6 +156,7 @@
 				AEA228FA2F63120E00EB1ED4 /* Obi */,
 				AEA229082F63120F00EB1ED4 /* ObiTests */,
 				AEA229122F63120F00EB1ED4 /* ObiUITests */,
+				AEBD0B212F7407ED00A31390 /* ShareExtension */,
 				AEA228F92F63120E00EB1ED4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +167,7 @@
 				AEA228F82F63120E00EB1ED4 /* Obi.app */,
 				AEA229052F63120F00EB1ED4 /* ObiTests.xctest */,
 				AEA2290F2F63120F00EB1ED4 /* ObiUITests.xctest */,
+				AEBD0B202F7407ED00A31390 /* ShareExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -126,10 +182,12 @@
 				AEA228F42F63120E00EB1ED4 /* Sources */,
 				AEA228F52F63120E00EB1ED4 /* Frameworks */,
 				AEA228F62F63120E00EB1ED4 /* Resources */,
+				AEBD0B2F2F7407ED00A31390 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				AEBD0B292F7407ED00A31390 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				AEA228FA2F63120E00EB1ED4 /* Obi */,
@@ -191,6 +249,28 @@
 			productReference = AEA2290F2F63120F00EB1ED4 /* ObiUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		AEBD0B1F2F7407ED00A31390 /* ShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AEBD0B2B2F7407ED00A31390 /* Build configuration list for PBXNativeTarget "ShareExtension" */;
+			buildPhases = (
+				AEBD0B1C2F7407ED00A31390 /* Sources */,
+				AEBD0B1D2F7407ED00A31390 /* Frameworks */,
+				AEBD0B1E2F7407ED00A31390 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				AEBD0B212F7407ED00A31390 /* ShareExtension */,
+			);
+			name = ShareExtension;
+			packageProductDependencies = (
+			);
+			productName = ShareExtension;
+			productReference = AEBD0B202F7407ED00A31390 /* ShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -211,6 +291,9 @@
 					AEA2290E2F63120F00EB1ED4 = {
 						CreatedOnToolsVersion = 26.1.1;
 						TestTargetID = AEA228F72F63120E00EB1ED4;
+					};
+					AEBD0B1F2F7407ED00A31390 = {
+						CreatedOnToolsVersion = 26.1.1;
 					};
 				};
 			};
@@ -234,6 +317,7 @@
 				AEA228F72F63120E00EB1ED4 /* Obi */,
 				AEA229042F63120F00EB1ED4 /* ObiTests */,
 				AEA2290E2F63120F00EB1ED4 /* ObiUITests */,
+				AEBD0B1F2F7407ED00A31390 /* ShareExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -254,6 +338,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AEA2290D2F63120F00EB1ED4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AEBD0B1E2F7407ED00A31390 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -284,6 +375,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AEBD0B1C2F7407ED00A31390 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -296,6 +394,11 @@
 			isa = PBXTargetDependency;
 			target = AEA228F72F63120E00EB1ED4 /* Obi */;
 			targetProxy = AEA229102F63120F00EB1ED4 /* PBXContainerItemProxy */;
+		};
+		AEBD0B292F7407ED00A31390 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AEBD0B1F2F7407ED00A31390 /* ShareExtension */;
+			targetProxy = AEBD0B282F7407ED00A31390 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -583,6 +686,66 @@
 			};
 			name = Release;
 		};
+		AEBD0B2C2F7407ED00A31390 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = W7WQFW7K74;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ShareExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kosukeosada.Obi.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AEBD0B2D2F7407ED00A31390 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = W7WQFW7K74;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ShareExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kosukeosada.Obi.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -618,6 +781,15 @@
 			buildConfigurations = (
 				AEA229202F63120F00EB1ED4 /* Debug */,
 				AEA229212F63120F00EB1ED4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AEBD0B2B2F7407ED00A31390 /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AEBD0B2C2F7407ED00A31390 /* Debug */,
+				AEBD0B2D2F7407ED00A31390 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

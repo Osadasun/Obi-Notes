@@ -78,6 +78,11 @@ class ListDetailViewModel: ObservableObject {
                 if let targetList = lists.first(where: { $0.defaultType == defaultListType }) {
                     let items = try await supabaseService.fetchListItems(listId: targetList.id)
 
+                    print("📋 [ListDetailViewModel] Fetched \(items.count) items from list")
+                    for (index, item) in items.enumerated() {
+                        print("   [\(index)] \(item.title) - targetId: \(item.targetId)")
+                    }
+
                     // Albumモデルにマッピング
                     albums = items.map { item in
                         Album(
@@ -90,6 +95,8 @@ class ListDetailViewModel: ObservableObject {
                             trackCount: nil
                         )
                     }
+
+                    print("📋 [ListDetailViewModel] Mapped to \(albums.count) albums")
                 } else {
                     albums = []
                 }
