@@ -486,10 +486,14 @@ class SupabaseService {
             throw SupabaseError.notConfigured
         }
 
+        guard let userUUID = UUID(uuidString: userId) else {
+            throw SupabaseError.notConfigured
+        }
+
         let response: [UserAlbum] = try await client
             .from("user_albums")
             .select()
-            .eq("user_id", value: userId)
+            .eq("user_id", value: userUUID)
             .order("created_at", ascending: false)
             .execute()
             .value
@@ -503,13 +507,17 @@ class SupabaseService {
         }
 
         struct NewAlbum: Encodable {
-            let user_id: String
+            let user_id: UUID
             let name: String
             let color_hex: String
         }
 
+        guard let userUUID = UUID(uuidString: userId) else {
+            throw SupabaseError.notConfigured
+        }
+
         let newAlbum = NewAlbum(
-            user_id: userId,
+            user_id: userUUID,
             name: name,
             color_hex: colorHex
         )
@@ -530,15 +538,23 @@ class SupabaseService {
             throw SupabaseError.notConfigured
         }
 
+        guard let albumUUID = UUID(uuidString: albumId) else {
+            throw SupabaseError.notConfigured
+        }
+
         try await client
             .from("user_albums")
             .delete()
-            .eq("id", value: albumId)
+            .eq("id", value: albumUUID)
             .execute()
     }
 
     func updateUserAlbum(albumId: String, name: String, colorHex: String) async throws {
         guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        guard let albumUUID = UUID(uuidString: albumId) else {
             throw SupabaseError.notConfigured
         }
 
@@ -555,7 +571,7 @@ class SupabaseService {
         try await client
             .from("user_albums")
             .update(updates)
-            .eq("id", value: albumId)
+            .eq("id", value: albumUUID)
             .execute()
     }
 }
