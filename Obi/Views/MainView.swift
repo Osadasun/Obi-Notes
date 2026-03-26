@@ -27,6 +27,7 @@ struct MainView: View {
     @State private var showProfile = false
     @State private var showMenu = false
     @State private var showCreateList = false
+    @State private var showCreateAlbum = false
     @State private var showSearchSheet = false
     @State private var isAddButtonPressed = false
     @State private var searchText = ""
@@ -123,6 +124,9 @@ struct MainView: View {
             }
             .sheet(isPresented: $showCreateList) {
                 CreateListView()
+            }
+            .sheet(isPresented: $showCreateAlbum) {
+                CreateAlbumView()
             }
             .sheet(isPresented: $showSearchSheet) {
                 SearchView()
@@ -266,6 +270,27 @@ struct MainView: View {
                                     Image(systemName: "list.bullet.rectangle")
                                         .font(.title3)
                                     Text("リスト")
+                                        .font(.headline)
+                                    Spacer()
+                                }
+                                .foregroundColor(.white)
+                                .padding(.vertical, 20)
+                                .padding(.horizontal, 24)
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+
+                            Divider()
+                                .background(Color.white.opacity(0.2))
+
+                            // アルバムボタン
+                            Button(action: {
+                                showMenu = false
+                                showCreateAlbum = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "square.stack.3d.up")
+                                        .font(.title3)
+                                    Text("アルバム")
                                         .font(.headline)
                                     Spacer()
                                 }

@@ -478,6 +478,86 @@ class SupabaseService {
             .value
         return response
     }
+
+    // MARK: - User Albums
+
+    func fetchUserAlbums(userId: String) async throws -> [UserAlbum] {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        let response: [UserAlbum] = try await client
+            .from("user_albums")
+            .select()
+            .eq("user_id", value: userId)
+            .order("created_at", ascending: false)
+            .execute()
+            .value
+
+        return response
+    }
+
+    func createUserAlbum(userId: String, name: String, colorHex: String) async throws -> UserAlbum {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        struct NewAlbum: Encodable {
+            let user_id: String
+            let name: String
+            let color_hex: String
+        }
+
+        let newAlbum = NewAlbum(
+            user_id: userId,
+            name: name,
+            color_hex: colorHex
+        )
+
+        let response: UserAlbum = try await client
+            .from("user_albums")
+            .insert(newAlbum)
+            .select()
+            .single()
+            .execute()
+            .value
+
+        return response
+    }
+
+    func deleteUserAlbum(albumId: String) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        try await client
+            .from("user_albums")
+            .delete()
+            .eq("id", value: albumId)
+            .execute()
+    }
+
+    func updateUserAlbum(albumId: String, name: String, colorHex: String) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        struct UpdateAlbum: Encodable {
+            let name: String
+            let color_hex: String
+        }
+
+        let updates = UpdateAlbum(
+            name: name,
+            color_hex: colorHex
+        )
+
+        try await client
+            .from("user_albums")
+            .update(updates)
+            .eq("id", value: albumId)
+            .execute()
+    }
 }
 
 // MARK: - Supabase Error
