@@ -513,7 +513,7 @@ struct ObiView: View {
                             .frame(maxWidth: .infinity)
                             .padding()
                     } else {
-                        // デフォルトリスト + カスタムリスト（統一された2列グリッド）
+                        // デフォルトリスト + カスタムリスト + ユーザーアルバム（統一された2列グリッド）
                         LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], spacing: 20) {
                             // デフォルトリスト
                             NavigationLink(destination: ListDetailView(listType: .reviewed)) {
@@ -552,16 +552,29 @@ struct ObiView: View {
                             }
                             .buttonStyle(.plain)
 
-                            // カスタムリスト
-                            ForEach(viewModel.customLists) { list in
-                                NavigationLink(destination: CustomListDetailView(list: list)) {
-                                    ListCard(
-                                        title: list.name,
-                                        count: viewModel.customListCounts[list.id] ?? 0,
-                                        artworkURLs: viewModel.customListArtworks[list.id] ?? []
-                                    )
+                            // カスタムリスト + ユーザーアルバム
+                            ForEach(viewModel.obiItems) { item in
+                                switch item {
+                                case .list(let list):
+                                    NavigationLink(destination: CustomListDetailView(list: list)) {
+                                        ListCard(
+                                            title: list.name,
+                                            count: viewModel.customListCounts[list.id] ?? 0,
+                                            artworkURLs: viewModel.customListArtworks[list.id] ?? []
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+
+                                case .userAlbum(let album):
+                                    NavigationLink(destination: UserAlbumDetailView(album: album)) {
+                                        AlbumCard(
+                                            title: album.name,
+                                            count: viewModel.userAlbumCounts[album.id] ?? 0,
+                                            colorHex: album.colorHex
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                         .padding(.horizontal, 24)
