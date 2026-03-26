@@ -501,7 +501,7 @@ class SupabaseService {
         return response
     }
 
-    func createUserAlbum(userId: String, name: String, colorHex: String) async throws -> UserAlbum {
+    func createUserAlbum(userId: String, name: String, artistName: String, colorHex: String) async throws -> UserAlbum {
         guard let client = client else {
             throw SupabaseError.notConfigured
         }
@@ -509,6 +509,7 @@ class SupabaseService {
         struct NewAlbum: Encodable {
             let user_id: UUID
             let name: String
+            let artist_name: String
             let color_hex: String
         }
 
@@ -519,6 +520,7 @@ class SupabaseService {
         let newAlbum = NewAlbum(
             user_id: userUUID,
             name: name,
+            artist_name: artistName,
             color_hex: colorHex
         )
 

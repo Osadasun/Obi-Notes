@@ -9,17 +9,20 @@ import SwiftUI
 
 struct AlbumCard: View {
     let title: String
+    let artistName: String
     let count: Int
     let colorHex: String
     let isSelected: Bool
 
     init(
         title: String,
+        artistName: String,
         count: Int,
         colorHex: String,
         isSelected: Bool = false
     ) {
         self.title = title
+        self.artistName = artistName
         self.count = count
         self.colorHex = colorHex
         self.isSelected = isSelected
@@ -60,14 +63,20 @@ struct AlbumCard: View {
                 )
                 .clipped()
 
-            // タイトルと件数
+            // タイトル、アーティスト名、件数
             VStack(spacing: 4) {
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
+                    .lineLimit(2)
 
-                Text("\(count)件")
+                Text(artistName)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+
+                Text("\(count)曲")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -79,6 +88,7 @@ struct AlbumCard: View {
     HStack(spacing: 16) {
         AlbumCard(
             title: "お気に入り",
+            artistName: "User",
             count: 12,
             colorHex: "#9F7AEA",
             isSelected: false
@@ -87,6 +97,7 @@ struct AlbumCard: View {
 
         AlbumCard(
             title: "2024ベスト",
+            artistName: "User",
             count: 8,
             colorHex: "#48BB78",
             isSelected: true

@@ -33,12 +33,11 @@ struct ListDetailView: View {
                     )
                     .padding(.vertical, 40)
                 } else {
-                    // 3列グリッド（画像のみ）
+                    // 2列グリッド（タイトル+アーティスト名付き）
                     LazyVGrid(columns: [
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12)
-                    ], spacing: 12) {
+                        GridItem(.flexible(), spacing: 20),
+                        GridItem(.flexible(), spacing: 20)
+                    ], spacing: 20) {
                         ForEach(viewModel.albums) { album in
                             NavigationLink(destination: AlbumDetailView(album: album)) {
                                 AlbumGridItem(album: album)

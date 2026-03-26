@@ -31,10 +31,15 @@ struct UserAlbumDetailView: View {
                                 .foregroundColor(.white.opacity(0.9))
                         )
 
-                    // タイトル
+                    // タイトルとアーティスト名
                     Text(album.name)
                         .font(.title)
                         .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+
+                    Text(album.artistName)
+                        .font(.title3)
+                        .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
 
                     Text("\(viewModel.tracks.count)曲")
@@ -115,6 +120,7 @@ struct UserAlbumDetailView: View {
             id: "1",
             userId: "test-user",
             name: "お気に入りのアルバム",
+            artistName: "User",
             colorHex: "#9F7AEA",
             createdAt: Date(),
             updatedAt: Date()

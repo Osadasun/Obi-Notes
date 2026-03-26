@@ -11,6 +11,7 @@ struct UserAlbum: Identifiable, Codable, Equatable {
     let id: String
     let userId: String
     let name: String
+    let artistName: String // アーティスト名（ユーザー名）
     let colorHex: String // 単色カラー（例: "#FF5733"）
     let createdAt: Date
     let updatedAt: Date
@@ -19,6 +20,7 @@ struct UserAlbum: Identifiable, Codable, Equatable {
         case id
         case userId = "user_id"
         case name
+        case artistName = "artist_name"
         case colorHex = "color_hex"
         case createdAt = "created_at"
         case updatedAt = "updated_at"

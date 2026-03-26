@@ -44,13 +44,15 @@ class CreateAlbumViewModel: ObservableObject {
 
         do {
             let colorHex = selectedColor.toHex()
+            let artistName = UserManager.shared.displayName
             _ = try await supabaseService.createUserAlbum(
                 userId: userId.uuidString,
                 name: albumName.trimmingCharacters(in: .whitespacesAndNewlines),
+                artistName: artistName,
                 colorHex: colorHex
             )
 
-            print("✅ [CreateAlbum] Album created: \(albumName)")
+            print("✅ [CreateAlbum] Album created: \(albumName) by \(artistName)")
             isCreating = false
             return true
         } catch {
