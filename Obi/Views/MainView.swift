@@ -182,14 +182,14 @@ struct MainView: View {
             setupInitialState(bottomPadding: bottomPadding)
         }
         .sheet(isPresented: $showAddAlbumSheet) {
-            if let albumId = deepLinkManager.pendingAlbumId {
-                AddAlbumFromShareView(albumId: albumId)
+            if let pendingMusic = deepLinkManager.pendingMusic {
+                AddAlbumFromShareView(musicId: pendingMusic.id, musicType: pendingMusic.type)
                     .onDisappear {
-                        deepLinkManager.clearPendingAlbumId()
+                        deepLinkManager.clearPendingMusic()
                     }
             }
         }
-        .onChange(of: deepLinkManager.pendingAlbumId) { oldValue, newValue in
+        .onChange(of: deepLinkManager.pendingMusic) { oldValue, newValue in
             if newValue != nil {
                 showAddAlbumSheet = true
             }

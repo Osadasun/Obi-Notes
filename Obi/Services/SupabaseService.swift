@@ -576,6 +576,98 @@ class SupabaseService {
             .eq("id", value: albumUUID)
             .execute()
     }
+
+    // MARK: - User Album Tracks
+
+    func addTrackToUserAlbum(albumId: String, trackId: String, title: String, artist: String, albumArt: String?) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        guard let albumUUID = UUID(uuidString: albumId) else {
+            throw SupabaseError.notConfigured
+        }
+
+        struct NewTrack: Encodable {
+            let album_id: UUID
+            let track_id: String
+            let title: String
+            let artist: String
+            let album_art: String?
+        }
+
+        let newTrack = NewTrack(
+            album_id: albumUUID,
+            track_id: trackId,
+            title: title,
+            artist: artist,
+            album_art: albumArt
+        )
+
+        try await client
+            .from("user_album_tracks")
+            .insert(newTrack)
+            .execute()
+    }
+
+    func fetchUserAlbumTracks(albumId: String) async throws -> [ListItem] {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        guard let albumUUID = UUID(uuidString: albumId) else {
+            throw SupabaseError.notConfigured
+        }
+
+        struct AlbumTrack: Decodable {
+            let track_id: String
+            let title: String
+            let artist: String
+            let album_art: String?
+            let created_at: Date
+
+            func toListItem() -> ListItem {
+                return ListItem(
+                    id: UUID(),
+                    listId: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+                    targetType: .track,
+                    targetId: track_id,
+                    addedAt: created_at,
+                    albumArt: album_art,
+                    title: title,
+                    artist: artist,
+                    userRating: nil
+                )
+            }
+        }
+
+        let tracks: [AlbumTrack] = try await client
+            .from("user_album_tracks")
+            .select()
+            .eq("album_id", value: albumUUID)
+            .order("created_at", ascending: false)
+            .execute()
+            .value
+
+        return tracks.map { $0.toListItem() }
+    }
+
+    func removeTrackFromUserAlbum(albumId: String, trackId: String) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        guard let albumUUID = UUID(uuidString: albumId) else {
+            throw SupabaseError.notConfigured
+        }
+
+        try await client
+            .from("user_album_tracks")
+            .delete()
+            .eq("album_id", value: albumUUID)
+            .eq("track_id", value: trackId)
+            .execute()
+    }
 }
 
 // MARK: - Supabase Error

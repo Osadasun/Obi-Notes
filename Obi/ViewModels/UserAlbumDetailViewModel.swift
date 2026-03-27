@@ -25,11 +25,14 @@ class UserAlbumDetailViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        // TODO: user_album_tracksテーブルから曲を取得する実装が必要
-        // 現在は空の配列を返す
-        tracks = []
-
-        print("✅ [UserAlbumDetail] アルバム \(albumId) のトラック取得完了: \(tracks.count)件")
+        do {
+            tracks = try await supabaseService.fetchUserAlbumTracks(albumId: albumId)
+            print("✅ [UserAlbumDetail] アルバム \(albumId) のトラック取得完了: \(tracks.count)件")
+        } catch {
+            print("❌ [UserAlbumDetail] トラック取得失敗: \(error)")
+            errorMessage = "トラックの取得に失敗しました"
+            tracks = []
+        }
 
         isLoading = false
     }

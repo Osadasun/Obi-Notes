@@ -71,27 +71,46 @@ class ShareViewController: UIViewController {
         hostingController.view.frame = view.bounds
         hostingController.didMove(toParent: self)
 
-        // URLを解析してアルバムIDを取得
+        // URLを解析して音楽IDとタイプを取得
         guard let parsed = MusicURLParser.parse(url: url),
-              parsed.service == .appleMusic,
-              let albumId = parsed.albumId else {
-            showError(message: "Apple Musicのアルバムではありません")
+              parsed.service == .appleMusic else {
+            showError(message: "Apple Musicのコンテンツではありません")
             return
         }
 
-        print("📋 [ShareViewController] Album ID: \(albumId)")
+        let musicId: String
+        let musicType: String
 
-        // アルバムIDをApp Groupsに保存
+        // ParsedMusicURLのisAlbumフラグを使用
+        if parsed.isAlbum {
+            guard let albumId = parsed.albumId else {
+                showError(message: "アルバム情報を取得できませんでした")
+                return
+            }
+            musicId = albumId
+            musicType = "album"
+            print("📋 [ShareViewController] Album ID: \(albumId)")
+        } else {
+            guard let trackId = parsed.trackId else {
+                showError(message: "トラック情報を取得できませんでした")
+                return
+            }
+            musicId = trackId
+            musicType = "track"
+            print("🎵 [ShareViewController] Track ID: \(trackId)")
+        }
+
+        // App Groupsに保存
         let sharedAlbum = SharedAlbumData(
-            albumId: albumId,
+            albumId: musicId,
             title: "読み込み中...",
             artist: "不明",
             artworkURL: nil
         )
         AppGroupManager.shared.addPendingAlbum(sharedAlbum)
 
-        // メインアプリを開く
-        if let appURL = URL(string: "obi://add-album?id=\(albumId)") {
+        // メインアプリを開く（typeパラメータを追加）
+        if let appURL = URL(string: "obi://add-music?id=\(musicId)&type=\(musicType)") {
             openURL(appURL)
         }
 
