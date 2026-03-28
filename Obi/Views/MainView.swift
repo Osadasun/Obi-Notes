@@ -20,6 +20,7 @@ struct ScaleButtonStyle: ButtonStyle {
 struct MainView: View {
     @StateObject private var authViewModel = AuthenticationViewModel()
     @StateObject private var pendingAlbumProcessor = PendingAlbumProcessor.shared
+    @StateObject private var searchHistoryViewModel = SearchHistoryViewModel()
     @EnvironmentObject var deepLinkManager: DeepLinkManager
     @Environment(\.colorScheme) var colorScheme
     @State private var selectedFeed: Feed = .obi
@@ -35,6 +36,7 @@ struct MainView: View {
     @State private var buttonTransitionProgress: CGFloat = 0.0 // ボタン変形用の進行度
     @State private var scrollPosition: Int? = 0 // ScrollViewの位置
     @State private var showAddAlbumSheet = false
+    @FocusState private var isSearchFieldFocused: Bool
     @Namespace private var animation
 
     // UIPageViewControllerの内部余白を計算
@@ -100,6 +102,12 @@ struct MainView: View {
                     pagingScrollView
                 }
                 .ignoresSafeArea(edges: .bottom)
+                .onTapGesture {
+                    // コンテンツエリアタップでフォーカスを外す
+                    if isSearchFieldFocused {
+                        isSearchFieldFocused = false
+                    }
+                }
 
                 // 背景オーバーレイ（メニュー表示時）
                 if showMenu {
@@ -110,6 +118,22 @@ struct MainView: View {
                                 showMenu = false
                             }
                         }
+                }
+
+                // 検索履歴オーバーレイ（フォーカス時）
+                if isSearchFieldFocused {
+                    SearchHistoryOverlay(
+                        viewModel: searchHistoryViewModel,
+                        searchText: $searchText,
+                        onSelectSearch: { query in
+                            searchText = query
+                            searchHistoryViewModel.addSearch(query)
+                            isSearchFieldFocused = false
+                        }
+                    )
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.2), value: isSearchFieldFocused)
+                    .ignoresSafeArea(edges: .bottom)
                 }
 
                 // 下部ボタンエリア
@@ -304,17 +328,25 @@ struct MainView: View {
                         .transition(.opacity)
                     }
 
-                    // Addボタン（メニュー非表示時）
+                    // Addボタン / キャンセルボタン（メニュー非表示時）
                     if !showMenu {
                         Button(action: {
-                            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
-                                showMenu = true
+                            if isSearchFieldFocused {
+                                // フォーカス中: キャンセル（フォーカスを外す）
+                                isSearchFieldFocused = false
+                            } else {
+                                // フォーカスなし: メニューを開く
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                    showMenu = true
+                                }
                             }
                         }) {
                             HStack(spacing: 8 * (1.0 - buttonTransitionProgress)) {
-                                Image(systemName: "plus")
+                                Image(systemName: isSearchFieldFocused ? "xmark" : "plus")
                                     .font(.system(size: 20, weight: .semibold))
                                     .foregroundColor(.white)
+                                    .rotationEffect(.degrees(isSearchFieldFocused ? 90 : 0))
+                                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSearchFieldFocused)
 
                                 // "Add"テキスト: 常に存在するが幅とopacityで制御
                                 Text("Add")
@@ -359,45 +391,70 @@ struct MainView: View {
                 Spacer()
 
                 // 右側: 検索ボタン → 検索フィールド（progressに応じて変化）
-                Button(action: {
+                ZStack {
+                    // Obiビューの時: ボタンとして動作（Exploreに移動）
                     if buttonTransitionProgress < 0.5 {
-                        // メニューが開いていたら閉じる
-                        if showMenu {
-                            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
-                                showMenu = false
-                            }
-                            // メニューが閉じるのを待ってからスクロール
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        Button(action: {
+                            // メニューが開いていたら閉じる
+                            if showMenu {
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                    showMenu = false
+                                }
+                                // メニューが閉じるのを待ってからスクロール
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        scrollPosition = 1
+                                    }
+                                }
+                            } else {
+                                // ScrollViewをスクロールさせてExploreに移動
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                     scrollPosition = 1
                                 }
                             }
-                        } else {
-                            // ScrollViewをスクロールさせてExploreに移動
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                scrollPosition = 1
+                        }) {
+                            HStack(spacing: 12 * buttonTransitionProgress) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(.white)
+
+                                // テキストフィールド: 常に存在するがopacityと幅で制御
+                                TextField("検索", text: $searchText)
+                                    .foregroundColor(.white)
+                                    .font(.body)
+                                    .accentColor(.white)
+                                    .opacity(Double(max((buttonTransitionProgress - 0.2) / 0.8, 0.0)))
+                                    .frame(width: max(0, (ScreenMetrics.shared.screenWidth-48-16-96) * (buttonTransitionProgress - 0.1)))
+                                    .disabled(true)
                             }
+                            .padding(.vertical, 14)
+                            .padding(.horizontal, 14)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    } else {
+                        // Exploreビューの時: TextFieldとして動作（タップでフォーカス）
+                        HStack(spacing: 12 * buttonTransitionProgress) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.white)
+
+                            // テキストフィールド: 常に存在するがopacityと幅で制御
+                            TextField("検索", text: $searchText)
+                                .foregroundColor(.white)
+                                .font(.body)
+                                .accentColor(.white)
+                                .opacity(Double(max((buttonTransitionProgress - 0.2) / 0.8, 0.0)))
+                                .frame(width: max(0, (ScreenMetrics.shared.screenWidth-48-16-96) * (buttonTransitionProgress - 0.1)))
+                                .focused($isSearchFieldFocused)
+                        }
+                        .padding(.vertical, 14)
+                        .padding(.horizontal, 14)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            isSearchFieldFocused = true
                         }
                     }
-                }) {
-                    HStack(spacing: 12 * buttonTransitionProgress) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.white)
-
-                        // テキストフィールド: 常に存在するがopacityと幅で制御
-                        TextField("検索", text: $searchText)
-                            .foregroundColor(.white)
-                            .font(.body)
-                            .accentColor(.white)
-                            .opacity(Double(max((buttonTransitionProgress - 0.2) / 0.8, 0.0)))
-                            .frame(width: max(0, (ScreenMetrics.shared.screenWidth-48-16-96) * (buttonTransitionProgress - 0.1)))
-                    }
-                    .padding(.vertical, 14)
-                    .padding(.horizontal, 14 )
                 }
-                .buttonStyle(PlainButtonStyle())
-                .allowsHitTesting(buttonTransitionProgress < 0.5)
                 .background(colorScheme == .dark ? Color(uiColor: .darkGray) : Color.black)
                 .cornerRadius(30)
                 .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
