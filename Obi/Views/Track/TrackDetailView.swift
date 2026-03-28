@@ -99,11 +99,11 @@ struct TrackDetailView: View {
             }
 
             // 曲情報
-            VStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(viewModel.track.title)
                     .font(.title2)
                     .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(.leading)
 
                 Text(viewModel.track.artist)
                     .font(.title3)
@@ -121,6 +121,7 @@ struct TrackDetailView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 24)
         }
         .padding(.vertical, 24)

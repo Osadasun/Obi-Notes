@@ -57,11 +57,11 @@ struct ReviewDetailView: View {
             }
 
             // アルバム/トラック情報
-            VStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(review.title)
                     .font(.title2)
                     .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(.leading)
 
                 Text(review.artist)
                     .font(.title3)
@@ -71,7 +71,8 @@ struct ReviewDetailView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            .padding(.horizontal)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24)
         }
         .padding(.vertical, 24)
     }

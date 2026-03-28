@@ -39,6 +39,12 @@ struct MainView: View {
     @FocusState private var isSearchFieldFocused: Bool
     @Namespace private var animation
 
+    // 新規作成されたアルバム/リストへのナビゲーション用
+    @State private var createdUserAlbum: UserAlbum?
+    @State private var createdList: MusicList?
+    @State private var navigateToNewUserAlbum = false
+    @State private var navigateToNewList = false
+
     // UIPageViewControllerの内部余白を計算
     private func calculateBottomPadding(safeAreaBottom: CGFloat) -> CGFloat {
         // ホームボタンありデバイス: safe area bottom = 0, padding = -50
@@ -156,6 +162,29 @@ struct MainView: View {
             .sheet(isPresented: $showSearchSheet) {
                 SearchView()
             }
+            .background(
+                Group {
+                    // 新規作成されたリストへのナビゲーション
+                    if let list = createdList {
+                        NavigationLink(
+                            destination: CustomListDetailView(list: list),
+                            isActive: $navigateToNewList
+                        ) {
+                            EmptyView()
+                        }
+                    }
+
+                    // 新規作成されたアルバムへのナビゲーション
+                    if let album = createdUserAlbum {
+                        NavigationLink(
+                            destination: UserAlbumDetailView(album: album),
+                            isActive: $navigateToNewUserAlbum
+                        ) {
+                            EmptyView()
+                        }
+                    }
+                }
+            )
         }
     }
 
@@ -289,7 +318,9 @@ struct MainView: View {
                             // リストボタン
                             Button(action: {
                                 showMenu = false
-                                showCreateList = true
+                                Task {
+                                    await createNewList()
+                                }
                             }) {
                                 HStack {
                                     Image(systemName: "list.bullet.rectangle")
@@ -310,7 +341,9 @@ struct MainView: View {
                             // アルバムボタン
                             Button(action: {
                                 showMenu = false
-                                showCreateAlbum = true
+                                Task {
+                                    await createNewAlbum()
+                                }
                             }) {
                                 HStack {
                                     Image(systemName: "square.stack.3d.up")
@@ -461,6 +494,63 @@ struct MainView: View {
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 0)
+        }
+    }
+
+    // MARK: - Helper Methods
+
+    /// 新しいリストを「タイトルなし」で即座に作成
+    private func createNewList() async {
+        guard let userId = UserManager.shared.currentUserId else {
+            print("❌ User not authenticated")
+            return
+        }
+
+        do {
+            let newList = MusicList(
+                id: UUID(),
+                userId: userId,
+                name: "タイトルなし",
+                description: nil,
+                isPublic: false,
+                type: .custom,
+                defaultType: nil,
+                createdAt: Date()
+            )
+
+            let createdList = try await SupabaseService.shared.createList(newList)
+            print("✅ [MainView] List created: \(createdList.name)")
+
+            // 作成されたリストへナビゲート
+            self.createdList = createdList
+            self.navigateToNewList = true
+        } catch {
+            print("❌ [MainView] Failed to create list: \(error)")
+        }
+    }
+
+    /// 新しいアルバムを「タイトルなし」で即座に作成
+    private func createNewAlbum() async {
+        guard let userId = UserManager.shared.currentUserId else {
+            print("❌ User not authenticated")
+            return
+        }
+
+        do {
+            let artistName = UserManager.shared.displayName
+            let createdAlbum = try await SupabaseService.shared.createUserAlbum(
+                userId: userId.uuidString,
+                name: "タイトルなし",
+                artistName: artistName,
+                colorHex: "#9F7AEA" // デフォルトのパープル
+            )
+            print("✅ [MainView] Album created: \(createdAlbum.name)")
+
+            // 作成されたアルバムへナビゲート
+            self.createdUserAlbum = createdAlbum
+            self.navigateToNewUserAlbum = true
+        } catch {
+            print("❌ [MainView] Failed to create album: \(error)")
         }
     }
 }
@@ -659,6 +749,7 @@ struct CustomListDetailView: View {
     let list: MusicList
     @StateObject private var viewModel: CustomListDetailViewModel
     @State private var showingSearchSheet = false
+    @State private var showingMenu = false
 
     init(list: MusicList) {
         self.list = list
@@ -717,6 +808,32 @@ struct CustomListDetailView: View {
         }
         .navigationTitle(list.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    showingMenu = true
+                }) {
+                    Image(systemName: "ellipsis")
+                        .font(.body)
+                        .foregroundColor(.primary)
+                }
+            }
+        }
+        .confirmationDialog("リストオプション", isPresented: $showingMenu) {
+            Button("名前を変更") {
+                // TODO: 名前変更機能
+            }
+            Button("説明を編集") {
+                // TODO: 説明編集機能
+            }
+            Button("公開設定", role: .none) {
+                // TODO: 公開設定機能
+            }
+            Button("削除", role: .destructive) {
+                // TODO: 削除機能
+            }
+            Button("キャンセル", role: .cancel) {}
+        }
         .sheet(isPresented: $showingSearchSheet) {
             SearchView()
         }

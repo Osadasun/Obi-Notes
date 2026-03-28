@@ -551,7 +551,7 @@ class SupabaseService {
             .execute()
     }
 
-    func updateUserAlbum(albumId: String, name: String, colorHex: String) async throws {
+    func updateUserAlbum(albumId: String, name: String?, colorHex: String?) async throws {
         guard let client = client else {
             throw SupabaseError.notConfigured
         }
@@ -561,8 +561,8 @@ class SupabaseService {
         }
 
         struct UpdateAlbum: Encodable {
-            let name: String
-            let color_hex: String
+            let name: String?
+            let color_hex: String?
         }
 
         let updates = UpdateAlbum(
