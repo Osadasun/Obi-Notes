@@ -235,7 +235,7 @@ struct MainView: View {
         VStack(spacing: 0) {
             Spacer()
 
-            HStack(alignment: .bottom, spacing: 16) {
+            HStack(alignment: .bottom, spacing: 8) {
                 // 左側: Addボタン / メニュー
                 ZStack {
                     // メニューコンテンツ（Obiタブでメニュー表示時）
@@ -389,10 +389,10 @@ struct MainView: View {
                             .font(.body)
                             .accentColor(.white)
                             .opacity(Double(max((buttonTransitionProgress - 0.2) / 0.8, 0.0)))
-                            .frame(width: max(0, 200 * (buttonTransitionProgress - 0.1)))
+                            .frame(width: max(0, (ScreenMetrics.shared.screenWidth-48-16-96) * (buttonTransitionProgress - 0.1)))
                     }
                     .padding(.vertical, 14)
-                    .padding(.horizontal, 14 + buttonTransitionProgress * 6)
+                    .padding(.horizontal, 14 )
                 }
                 .buttonStyle(PlainButtonStyle())
                 .allowsHitTesting(buttonTransitionProgress < 0.5)
