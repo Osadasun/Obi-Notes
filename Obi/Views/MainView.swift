@@ -311,23 +311,25 @@ struct MainView: View {
                                 showMenu = true
                             }
                         }) {
-                            HStack(spacing: 8) {
+                            HStack(spacing: 8 * (1.0 - buttonTransitionProgress)) {
                                 Image(systemName: "plus")
                                     .font(.system(size: 20, weight: .semibold))
                                     .foregroundColor(.white)
 
-                                // "Add"テキスト: progressが進むとフェードアウト
-                                if buttonTransitionProgress < 0.8 {
-                                    Text("Add")
-                                        .font(.headline)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.white)
-                                        .opacity(Double(1.0 - min(buttonTransitionProgress / 0.8, 1.0)))
-                                }
+                                // "Add"テキスト: 常に存在するが幅とopacityで制御
+                                Text("Add")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
+                                    .opacity(Double(1.0 - min(buttonTransitionProgress / 0.8, 1.0)))
+                                    .frame(width: max(0, 35 * (1.0 - buttonTransitionProgress / 0.8)))
+                                    .clipped()
                             }
-                            // パディング: progressに応じて縮小
-                            .padding(.vertical, 16 - buttonTransitionProgress * 2)
-                            .padding(.horizontal, 32 - buttonTransitionProgress * 18)
+                            // パディング: progressに応じて縮小（円形を保つため同じ値に）
+                            .padding(.vertical, max(14, 16 - buttonTransitionProgress * 2))
+                            .padding(.horizontal, max(14, 32 - buttonTransitionProgress * 18))
                         }
                         .buttonStyle(PlainButtonStyle())
                         .simultaneousGesture(
@@ -350,7 +352,7 @@ struct MainView: View {
                     }
                 }
                 .background(colorScheme == .dark ? Color(uiColor: .darkGray) : Color.black)
-                .cornerRadius(showMenu ? 16 : (30 - buttonTransitionProgress * 6))
+                .cornerRadius(showMenu ? 16 : max(24, 30 - buttonTransitionProgress * 12))
                 .shadow(color: .black.opacity(showMenu ? 0 : 0.3), radius: 10, x: 0, y: 5)
                 .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showMenu)
 
