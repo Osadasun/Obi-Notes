@@ -21,6 +21,7 @@ struct MainView: View {
     @StateObject private var authViewModel = AuthenticationViewModel()
     @StateObject private var pendingAlbumProcessor = PendingAlbumProcessor.shared
     @EnvironmentObject var deepLinkManager: DeepLinkManager
+    @Environment(\.colorScheme) var colorScheme
     @State private var selectedFeed: Feed = .obi
     @State private var showSearch = false
     @State private var bottomSpacerHeight: CGFloat = 100
@@ -348,7 +349,7 @@ struct MainView: View {
                         .transition(.opacity)
                     }
                 }
-                .background(Color.black)
+                .background(colorScheme == .dark ? Color(uiColor: .darkGray) : Color.black)
                 .cornerRadius(showMenu ? 16 : (30 - buttonTransitionProgress * 6))
                 .shadow(color: .black.opacity(showMenu ? 0 : 0.3), radius: 10, x: 0, y: 5)
                 .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showMenu)
@@ -380,7 +381,7 @@ struct MainView: View {
                     HStack(spacing: 12 * buttonTransitionProgress) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.white.opacity(1.0 - buttonTransitionProgress * 0.4))
+                            .foregroundColor(.white)
 
                         // テキストフィールド: 常に存在するがopacityと幅で制御
                         TextField("検索", text: $searchText)
@@ -393,10 +394,9 @@ struct MainView: View {
                     .padding(.vertical, 14)
                     .padding(.horizontal, 14 + buttonTransitionProgress * 6)
                 }
-                .frame(minWidth: 48)
-                .disabled(buttonTransitionProgress >= 0.5)
                 .buttonStyle(PlainButtonStyle())
-                .background(Color.black)
+                .allowsHitTesting(buttonTransitionProgress < 0.5)
+                .background(colorScheme == .dark ? Color(uiColor: .darkGray) : Color.black)
                 .cornerRadius(30)
                 .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
             }

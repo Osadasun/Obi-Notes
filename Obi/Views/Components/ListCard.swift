@@ -29,7 +29,7 @@ struct ListCard: View {
         VStack(spacing: 12) {
             // アルバムアート表示エリア（正方形）
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.gray.opacity(0.1))
+                .fill(Color.gray.opacity(0.2))
                 .aspectRatio(1, contentMode: .fit)
                 .overlay(
                     ZStack {
