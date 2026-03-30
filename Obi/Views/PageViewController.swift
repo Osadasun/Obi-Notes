@@ -39,6 +39,14 @@ struct PageViewController<Page: View>: UIViewControllerRepresentable {
             print("📄 Set initial viewController at index \(currentIndex)")
         }
 
+        // CoordinatorにUIPageViewControllerの参照を保存
+        context.coordinator.pageViewController = pageViewController
+
+        // 初期状態でスクロール有効/無効を設定
+        DispatchQueue.main.async {
+            context.coordinator.updateScrollEnabled()
+        }
+
         return pageViewController
     }
 
@@ -83,6 +91,9 @@ struct PageViewController<Page: View>: UIViewControllerRepresentable {
         )
 
         context.coordinator.currentIndex = currentIndex
+
+        // 最初のページにいる場合はスクロールを無効化（外側のScrollViewがジェスチャーを処理できるように）
+        context.coordinator.updateScrollEnabled()
     }
 
     class Coordinator: NSObject, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
@@ -90,12 +101,46 @@ struct PageViewController<Page: View>: UIViewControllerRepresentable {
         var controllers: [UIHostingController<Page>] = []
         var pageIds: [String] = []
         var currentIndex: Int?
+        weak var pageViewController: UIPageViewController?
 
         init(_ pageViewController: PageViewController) {
             self.parent = pageViewController
             self.controllers = pageViewController.pages.map { UIHostingController(rootView: $0) }
             self.pageIds = pageViewController.pageIds
             self.currentIndex = pageViewController.currentIndex
+        }
+
+        func updateScrollEnabled() {
+            guard let pageViewController = pageViewController else {
+                print("📄 updateScrollEnabled: pageViewController is nil")
+                return
+            }
+
+            print("📄 updateScrollEnabled called - currentIndex: \(currentIndex ?? -1), pages.count: \(controllers.count)")
+
+            // UIPageViewControllerの内部ScrollViewを取得
+            var foundScrollView = false
+            for view in pageViewController.view.subviews {
+                if let scrollView = view as? UIScrollView {
+                    foundScrollView = true
+                    // 最初のページにいる場合はスクロールを無効化
+                    // これにより外側のScrollViewがジェスチャーを処理できる
+                    let shouldDisableScroll = currentIndex == 0
+                    let newValue = !shouldDisableScroll
+                    let oldValue = scrollView.isScrollEnabled
+
+                    if oldValue != newValue {
+                        scrollView.isScrollEnabled = newValue
+                        print("📄 ✅ Changed scroll enabled: \(oldValue) → \(newValue) (index: \(currentIndex ?? -1))")
+                    } else {
+                        print("📄 ℹ️ Scroll enabled unchanged: \(newValue) (index: \(currentIndex ?? -1))")
+                    }
+                }
+            }
+
+            if !foundScrollView {
+                print("📄 ⚠️ No UIScrollView found in UIPageViewController.view.subviews")
+            }
         }
 
         func pageViewController(
@@ -113,11 +158,8 @@ struct PageViewController<Page: View>: UIViewControllerRepresentable {
             _ pageViewController: UIPageViewController,
             viewControllerAfter viewController: UIViewController
         ) -> UIViewController? {
-            guard let index = controllers.firstIndex(where: { $0 === viewController }),
-                  index < controllers.count - 1 else {
-                return nil
-            }
-            return controllers[index + 1]
+            // 「次へ」のスワイプを無効化（Obiタブ内では詳細画面に進むスワイプは不要）
+            return nil
         }
 
         func pageViewController(
@@ -129,9 +171,13 @@ struct PageViewController<Page: View>: UIViewControllerRepresentable {
             if completed,
                let visibleViewController = pageViewController.viewControllers?.first,
                let index = controllers.firstIndex(where: { $0 === visibleViewController }) {
+                print("📄 didFinishAnimating: index changed to \(index)")
                 currentIndex = index
                 parent.currentIndex = index
                 parent.onPageChange(index)
+
+                // ページ変更後にスクロール状態を更新
+                updateScrollEnabled()
             }
         }
     }
