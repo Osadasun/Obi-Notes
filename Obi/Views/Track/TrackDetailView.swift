@@ -73,30 +73,9 @@ struct TrackDetailView: View {
 
     private var trackHeader: some View {
         VStack(spacing: 16) {
-            // アルバムアート
-            if let artworkURL = viewModel.track.artworkURL, let url = URL(string: artworkURL) {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                }
-                .frame(width: 250, height: 250)
-                .cornerRadius(12)
+            // CD型アートワーク
+            DonutArtwork(imageUrl: viewModel.track.artworkURL, size: 250)
                 .shadow(radius: 10)
-            } else {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 250, height: 250)
-                    .cornerRadius(12)
-                    .overlay(
-                        Image(systemName: "music.note")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
-                    )
-            }
 
             // 曲情報
             VStack(alignment: .leading, spacing: 8) {

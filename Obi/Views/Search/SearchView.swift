@@ -334,16 +334,8 @@ struct SearchView: View {
             // NavigationLink用の透明ボタン
             NavigationLink(destination: TrackDetailView(track: track)) {
                 HStack(spacing: 12) {
-                    // アルバムアート
-                    if let artworkURL = track.artworkURL, let url = URL(string: artworkURL.replacingOccurrences(of: "{w}x{h}", with: "80x80")) {
-                        AsyncImage(url: url) { image in
-                            image.resizable().aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Color.gray.opacity(0.3)
-                        }
-                        .frame(width: 56, height: 56)
-                        .cornerRadius(6)
-                    }
+                    // CD型アートワーク
+                    DonutArtwork(imageUrl: track.artworkURL, size: 56)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(track.title)

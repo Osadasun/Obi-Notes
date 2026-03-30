@@ -20,30 +20,36 @@ struct WriteReviewView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 0) {
                 // アルバム/楽曲情報
                 HStack(spacing: 12) {
-                    // アートワーク
-                    if let artworkURL = musicItem.artworkURL, let url = URL(string: artworkURL) {
-                        AsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.2))
-                        }
-                        .frame(width: 80, height: 80)
-                        .cornerRadius(8)
+                    // アートワーク（楽曲の場合はCD型、アルバムの場合は角丸四角）
+                    if musicItem.type == .track {
+                        // CD型アートワーク
+                        DonutArtwork(imageUrl: musicItem.artworkURL, size: 80)
                     } else {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.2))
+                        // アルバムの場合は従来通り
+                        if let artworkURL = musicItem.artworkURL, let url = URL(string: artworkURL) {
+                            AsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.2))
+                            }
                             .frame(width: 80, height: 80)
                             .cornerRadius(8)
-                            .overlay(
-                                Image(systemName: "music.note")
-                                    .foregroundColor(.gray)
-                            )
+                        } else {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(width: 80, height: 80)
+                                .cornerRadius(8)
+                                .overlay(
+                                    Image(systemName: "music.note")
+                                        .foregroundColor(.gray)
+                                )
+                        }
                     }
 
                     // タイトル・アーティスト
@@ -64,66 +70,62 @@ struct WriteReviewView: View {
 
                     Spacer()
                 }
-                .padding()
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
                 .background(Color(.systemGray6))
                 .cornerRadius(12)
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
 
                 Divider()
+                    .padding(.vertical, 20)
 
                 // 評価
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("評価")
-                        .font(.headline)
-
-                    HStack(spacing: 8) {
-                        ForEach(1...5, id: \.self) { index in
-                            Button(action: {
-                                viewModel.rating = Double(index)
-                            }) {
-                                Image(systemName: index <= Int(viewModel.rating) ? "star.fill" : "star")
-                                    .font(.title2)
-                                    .foregroundColor(index <= Int(viewModel.rating) ? .yellow : .gray)
-                            }
+                HStack(spacing: 8) {
+                    ForEach(1...5, id: \.self) { index in
+                        Button(action: {
+                            viewModel.rating = Double(index)
+                        }) {
+                            Image(systemName: index <= Int(viewModel.rating) ? "star.fill" : "star")
+                                .font(.title2)
+                                .foregroundColor(index <= Int(viewModel.rating) ? .yellow : .gray)
                         }
-
-                        Text("\(viewModel.rating, specifier: "%.1f")")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .padding(.leading, 8)
                     }
+
+                    Text("\(viewModel.rating, specifier: "%.1f")")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                        .padding(.leading, 8)
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 24)
 
                 Divider()
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 20)
 
-                // レビュータイトル
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("タイトル")
-                        .font(.headline)
-
-                    TextField("タイトルを入力...", text: $viewModel.reviewTitle)
-                        .textFieldStyle(.roundedBorder)
-                        .padding(.horizontal, 4)
-                }
-
-                Divider()
-
-                // レビューコメント
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("レビュー")
-                        .font(.headline)
+                // タイトルとレビューをnote風に連結
+                VStack(alignment: .leading, spacing: 0) {
+                    TextField("タイトル", text: $viewModel.reviewTitle)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
 
                     TextEditor(text: $viewModel.reviewText)
-                        .frame(minHeight: 150)
-                        .padding(8)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
+                        .frame(minHeight: 200)
+                        .font(.body)
+                        .padding(.horizontal, 20)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
                         .overlay(
                             Group {
                                 if viewModel.reviewText.isEmpty {
                                     Text("この作品の感想を書いてみよう...")
                                         .foregroundColor(.gray)
-                                        .padding(.leading, 12)
-                                        .padding(.top, 16)
+                                        .font(.body)
+                                        .padding(.horizontal, 24)
+                                        .padding(.top, 8)
                                         .allowsHitTesting(false)
                                 }
                             },
@@ -132,8 +134,9 @@ struct WriteReviewView: View {
                 }
 
                 Divider()
+                    .padding(.vertical, 20)
 
-                // 公開設定（将来の拡張用）
+                // 公開設定
                 VStack(alignment: .leading, spacing: 12) {
                     Text("公開設定")
                         .font(.headline)
@@ -141,8 +144,9 @@ struct WriteReviewView: View {
                     Toggle("全員に公開", isOn: $viewModel.isPublic)
                         .tint(.purple)
                 }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
             }
-            .padding()
         }
         .navigationTitle("レビューを書く")
         .navigationBarTitleDisplayMode(.inline)

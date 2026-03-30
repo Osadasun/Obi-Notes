@@ -100,16 +100,8 @@ struct UserAlbumDetailView: View {
                             VStack(spacing: 0) {
                                 // TODO: トラック詳細への遷移を実装
                                 HStack(spacing: 12) {
-                                    // アートワーク
-                                    if let artworkURL = track.albumArt, let url = URL(string: artworkURL) {
-                                        AsyncImage(url: url) { image in
-                                            image.resizable().aspectRatio(contentMode: .fill)
-                                        } placeholder: {
-                                            Color.gray.opacity(0.2)
-                                        }
-                                        .frame(width: 50, height: 50)
-                                        .cornerRadius(6)
-                                    }
+                                    // CD型アートワーク
+                                    DonutArtwork(imageUrl: track.albumArt, size: 50)
 
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(track.title)

@@ -774,9 +774,8 @@ struct CustomListDetailView: View {
                     )
                     .padding(.vertical, 40)
                 } else {
-                    // 3列グリッド（画像のみ）
+                    // 2列グリッド（画像のみ）
                     LazyVGrid(columns: [
-                        GridItem(.flexible(), spacing: 12),
                         GridItem(.flexible(), spacing: 12),
                         GridItem(.flexible(), spacing: 12)
                     ], spacing: 12) {
