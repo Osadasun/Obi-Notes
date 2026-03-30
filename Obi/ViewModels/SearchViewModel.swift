@@ -16,10 +16,17 @@ class SearchViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var isAuthorized = false
+    @Published var addedAlbumIds: Set<String> = []
+    @Published var addedTrackIds: Set<String> = []
 
     private var searchTask: Task<Void, Never>?
+    private let listId: UUID?
+    private let userAlbumId: String?
 
-    init() {
+    init(listId: UUID? = nil, userAlbumId: String? = nil) {
+        self.listId = listId
+        self.userAlbumId = userAlbumId
+
         if AppConfig.useMockMusicService {
             isAuthorized = MockMusicService.shared.isAuthorized
             print("🎭 Using Mock Music Service")
@@ -161,5 +168,80 @@ class SearchViewModel: ObservableObject {
         albums = []
         tracks = []
         errorMessage = nil
+    }
+
+    // MARK: - Add/Remove Items
+
+    func toggleAlbum(_ album: Album) async {
+        if addedAlbumIds.contains(album.id) {
+            // すでに追加済み - 削除する
+            addedAlbumIds.remove(album.id)
+            // TODO: Supabaseから削除する処理を追加
+        } else {
+            // 未追加 - 追加する
+            addedAlbumIds.insert(album.id)
+
+            guard let listId = listId else {
+                print("❌ [SearchViewModel] listId is nil")
+                return
+            }
+
+            do {
+                // リストにアルバムを追加
+                try await SupabaseService.shared.addToList(
+                    listId: listId,
+                    targetType: .album,
+                    targetId: album.id,
+                    title: album.title,
+                    artist: album.artist,
+                    artworkURL: album.artworkURL300
+                )
+                print("✅ [SearchViewModel] Album added to list: \(album.title)")
+            } catch {
+                print("❌ [SearchViewModel] Failed to add album: \(error)")
+                // エラーの場合は追加状態を元に戻す
+                addedAlbumIds.remove(album.id)
+            }
+        }
+    }
+
+    func toggleTrack(_ track: Track) async {
+        if addedTrackIds.contains(track.id) {
+            // すでに追加済み - 削除する
+            addedTrackIds.remove(track.id)
+            // TODO: Supabaseから削除する処理を追加
+        } else {
+            // 未追加 - 追加する
+            addedTrackIds.insert(track.id)
+
+            guard let userAlbumId = userAlbumId else {
+                print("❌ [SearchViewModel] userAlbumId is nil")
+                return
+            }
+
+            do {
+                // ユーザーアルバムにトラックを追加
+                try await SupabaseService.shared.addTrackToUserAlbum(
+                    albumId: userAlbumId,
+                    trackId: track.id,
+                    title: track.title,
+                    artist: track.artist,
+                    albumArt: track.artworkURL
+                )
+                print("✅ [SearchViewModel] Track added to user album: \(track.title)")
+            } catch {
+                print("❌ [SearchViewModel] Failed to add track: \(error)")
+                // エラーの場合は追加状態を元に戻す
+                addedTrackIds.remove(track.id)
+            }
+        }
+    }
+
+    func isAlbumAdded(_ albumId: String) -> Bool {
+        return addedAlbumIds.contains(albumId)
+    }
+
+    func isTrackAdded(_ trackId: String) -> Bool {
+        return addedTrackIds.contains(trackId)
     }
 }

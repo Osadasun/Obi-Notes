@@ -749,11 +749,14 @@ struct CustomListDetailView: View {
     let list: MusicList
     @StateObject private var viewModel: CustomListDetailViewModel
     @State private var showingSearchSheet = false
-    @State private var showingMenu = false
+    @State private var editedName: String
+    @State private var isEditingName = false
+    @FocusState private var isNameFieldFocused: Bool
 
     init(list: MusicList) {
         self.list = list
         self._viewModel = StateObject(wrappedValue: CustomListDetailViewModel(listId: list.id))
+        self._editedName = State(initialValue: list.name)
     }
 
     var body: some View {
@@ -806,42 +809,105 @@ struct CustomListDetailView: View {
             .padding(.trailing, 20)
             .padding(.bottom, 20)
         }
-        .navigationTitle(list.name)
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                if isEditingName {
+                    TextField("タイトルなし", text: $editedName)
+                        .font(.headline)
+                        .multilineTextAlignment(.center)
+                        .focused($isNameFieldFocused)
+                        .onSubmit {
+                            Task {
+                                await updateListName()
+                            }
+                        }
+                } else {
+                    Button(action: {
+                        isEditingName = true
+                        isNameFieldFocused = true
+                    }) {
+                        Text(editedName)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                    }
+                }
+            }
+
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    showingMenu = true
-                }) {
+                Menu {
+                    Button(action: {
+                        isEditingName = true
+                        isNameFieldFocused = true
+                    }) {
+                        Label("名前を変更", systemImage: "pencil")
+                    }
+
+                    Button(action: {
+                        // TODO: 説明編集機能
+                    }) {
+                        Label("説明を編集", systemImage: "text.alignleft")
+                    }
+
+                    Button(action: {
+                        // TODO: 公開設定機能
+                    }) {
+                        Label("公開設定", systemImage: "eye")
+                    }
+
+                    Divider()
+
+                    Button(role: .destructive, action: {
+                        // TODO: 削除機能
+                    }) {
+                        Label("削除", systemImage: "trash")
+                    }
+                } label: {
                     Image(systemName: "ellipsis")
                         .font(.body)
                         .foregroundColor(.primary)
                 }
             }
         }
-        .confirmationDialog("リストオプション", isPresented: $showingMenu) {
-            Button("名前を変更") {
-                // TODO: 名前変更機能
-            }
-            Button("説明を編集") {
-                // TODO: 説明編集機能
-            }
-            Button("公開設定", role: .none) {
-                // TODO: 公開設定機能
-            }
-            Button("削除", role: .destructive) {
-                // TODO: 削除機能
-            }
-            Button("キャンセル", role: .cancel) {}
-        }
         .sheet(isPresented: $showingSearchSheet) {
-            SearchView()
+            SearchView(filter: .albumsOnly, listId: list.id)
+                .presentationDragIndicator(.visible)
+                .presentationDetents([.large])
         }
         .task {
             await viewModel.loadAlbums()
         }
-        .refreshable {
-            await viewModel.loadAlbums()
+    }
+
+    // MARK: - Helper Methods
+
+    private func updateListName() async {
+        let trimmedName = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 空の場合は「タイトルなし」として保存
+        let finalName = trimmedName.isEmpty ? "タイトルなし" : trimmedName
+
+        guard finalName != list.name else {
+            editedName = list.name
+            isEditingName = false
+            return
+        }
+
+        do {
+            try await SupabaseService.shared.updateList(
+                listId: list.id,
+                name: finalName,
+                description: nil,
+                isPublic: nil
+            )
+            print("✅ [CustomListDetailView] List name updated: \(finalName)")
+            editedName = finalName
+            isEditingName = false
+        } catch {
+            print("❌ [CustomListDetailView] Failed to update list name: \(error)")
+            editedName = list.name
+            isEditingName = false
         }
     }
 }

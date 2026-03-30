@@ -304,6 +304,30 @@ class SupabaseService {
         return response
     }
 
+    func updateList(listId: UUID, name: String?, description: String?, isPublic: Bool?) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        struct UpdateList: Encodable {
+            let name: String?
+            let description: String?
+            let is_public: Bool?
+        }
+
+        let updates = UpdateList(
+            name: name,
+            description: description,
+            is_public: isPublic
+        )
+
+        try await client
+            .from("lists")
+            .update(updates)
+            .eq("id", value: listId)
+            .execute()
+    }
+
     func createDefaultLists(for userId: UUID) async throws {
         guard client != nil else {
             throw SupabaseError.notConfigured

@@ -10,8 +10,8 @@ import SwiftUI
 struct UserAlbumDetailView: View {
     let album: UserAlbum
     @StateObject private var viewModel: UserAlbumDetailViewModel
-    @State private var showingMenu = false
     @State private var editedName: String
+    @State private var showingSearchSheet = false
     @FocusState private var isNameFieldFocused: Bool
 
     init(album: UserAlbum) {
@@ -60,6 +60,25 @@ struct UserAlbumDetailView: View {
                     .padding(.horizontal, 24)
                 }
                 .padding(.top, 32)
+
+                // 曲を追加ボタン
+                Button(action: {
+                    showingSearchSheet = true
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus")
+                            .font(.body)
+                        Text("曲を追加")
+                            .font(.body)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(12)
+                }
+                .padding(.horizontal, 24)
 
                 // 曲リスト
                 if viewModel.isLoading {
@@ -123,26 +142,37 @@ struct UserAlbumDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    showingMenu = true
-                }) {
+                Menu {
+                    Button(action: {
+                        // TODO: 名前変更機能
+                    }) {
+                        Label("名前を変更", systemImage: "pencil")
+                    }
+
+                    Button(action: {
+                        // TODO: 色変更機能
+                    }) {
+                        Label("色を変更", systemImage: "paintpalette")
+                    }
+
+                    Divider()
+
+                    Button(role: .destructive, action: {
+                        // TODO: 削除機能
+                    }) {
+                        Label("削除", systemImage: "trash")
+                    }
+                } label: {
                     Image(systemName: "ellipsis")
                         .font(.body)
                         .foregroundColor(.primary)
                 }
             }
         }
-        .confirmationDialog("アルバムオプション", isPresented: $showingMenu) {
-            Button("名前を変更") {
-                // TODO: 名前変更機能
-            }
-            Button("色を変更") {
-                // TODO: 色変更機能
-            }
-            Button("削除", role: .destructive) {
-                // TODO: 削除機能
-            }
-            Button("キャンセル", role: .cancel) {}
+        .sheet(isPresented: $showingSearchSheet) {
+            SearchView(filter: .tracksOnly, userAlbumId: album.id)
+                .presentationDragIndicator(.visible)
+                .presentationDetents([.large])
         }
         .task {
             await viewModel.loadTracks()
