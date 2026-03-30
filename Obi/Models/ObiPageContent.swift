@@ -12,6 +12,7 @@ enum ObiPageContent: Identifiable, Equatable {
     case defaultList(MyListCategory)
     case customList(MusicList)
     case userAlbum(UserAlbum)
+    case albumDetail(Album)
 
     var id: String {
         switch self {
@@ -23,6 +24,8 @@ enum ObiPageContent: Identifiable, Equatable {
             return "customList_\(list.id.uuidString)"
         case .userAlbum(let album):
             return "userAlbum_\(album.id)"
+        case .albumDetail(let album):
+            return "albumDetail_\(album.id)"
         }
     }
 
@@ -36,6 +39,8 @@ enum ObiPageContent: Identifiable, Equatable {
             return list.name
         case .userAlbum(let album):
             return album.name
+        case .albumDetail(let album):
+            return album.title
         }
     }
 }

@@ -130,8 +130,14 @@ struct MainView: View {
                     .ignoresSafeArea(edges: .bottom)
                 }
 
-                // 下部ボタンエリア
-                bottomButtons
+                // 下部ボタンエリア（ルート画面のみ表示）
+                let isObiRoot = obiPageManager.currentPage.id == "cardList"
+                let isExploreRoot = explorePageManager.currentPage.id == "feed"
+                let shouldShowButtons = (selectedFeed == .obi && isObiRoot) || (selectedFeed == .explore && isExploreRoot)
+
+                if shouldShowButtons {
+                    bottomButtons
+                }
             }
             .sheet(isPresented: $showSearch) {
                 SearchView()
@@ -680,14 +686,16 @@ struct FloatingButton: View {
 // MARK: - Custom List Detail View
 struct CustomListDetailView: View {
     let list: MusicList
+    var onNavigateToAlbum: ((Album) -> Void)? = nil
     @StateObject private var viewModel: CustomListDetailViewModel
     @State private var showingSearchSheet = false
     @State private var editedName: String
     @State private var isEditingName = false
     @FocusState private var isNameFieldFocused: Bool
 
-    init(list: MusicList) {
+    init(list: MusicList, onNavigateToAlbum: ((Album) -> Void)? = nil) {
         self.list = list
+        self.onNavigateToAlbum = onNavigateToAlbum
         self._viewModel = StateObject(wrappedValue: CustomListDetailViewModel(listId: list.id))
         self._editedName = State(initialValue: list.name)
     }
@@ -713,8 +721,17 @@ struct CustomListDetailView: View {
                         GridItem(.flexible(), spacing: 12)
                     ], spacing: 12) {
                         ForEach(viewModel.albums) { album in
-                            NavigationLink(destination: AlbumDetailView(album: album)) {
-                                AlbumGridItem(album: album)
+                            if let onNavigate = onNavigateToAlbum {
+                                Button(action: {
+                                    onNavigate(album)
+                                }) {
+                                    AlbumGridItem(album: album)
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                NavigationLink(destination: AlbumDetailView(album: album)) {
+                                    AlbumGridItem(album: album)
+                                }
                             }
                         }
                     }
