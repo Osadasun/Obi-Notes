@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Review: Identifiable, Codable {
+struct Review: Identifiable, Codable, Equatable {
     let id: UUID
     let userId: UUID
     let targetType: TargetType
@@ -48,7 +48,7 @@ enum TargetType: String, Codable {
 }
 
 // MARK: - Review with User Info
-struct ReviewWithUser: Identifiable {
+struct ReviewWithUser: Identifiable, Equatable {
     let review: Review
     let user: User
 

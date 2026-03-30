@@ -10,6 +10,7 @@ import SwiftUI
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
     let bottomSpacerHeight: CGFloat
+    var onNavigate: ((ExplorePageContent) -> Void)? = nil
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -31,7 +32,20 @@ struct HomeView: View {
                 } else {
                     VStack(spacing: 12) {
                         ForEach(viewModel.latestReviews) { reviewWithUser in
-                            ReviewCard(reviewWithUser: reviewWithUser)
+                            ReviewCard(
+                                reviewWithUser: reviewWithUser,
+                                onTap: {
+                                    onNavigate?(.albumDetail(Album(
+                                        id: reviewWithUser.review.targetId,
+                                        title: reviewWithUser.review.title,
+                                        artist: reviewWithUser.review.artist,
+                                        artworkURL: reviewWithUser.review.albumArt,
+                                        releaseDate: nil,
+                                        genre: nil,
+                                        trackCount: nil
+                                    )))
+                                }
+                            )
                         }
                     }
                     .padding(.horizontal, 24)
@@ -50,7 +64,12 @@ struct HomeView: View {
                 } else {
                     LazyVGrid(columns: gridColumns, spacing: 16) {
                         ForEach(viewModel.popularAlbums, id: \.id) { album in
-                            PopularAlbumCard(album: album)
+                            PopularAlbumCard(
+                                album: album,
+                                onTap: {
+                                    onNavigate?(.albumDetail(album))
+                                }
+                            )
                         }
                     }
                     .padding(.horizontal, 24)
@@ -259,9 +278,12 @@ struct ReviewCardPlaceholder: View {
 // MARK: - Popular Album Card
 struct PopularAlbumCard: View {
     let album: Album?
+    var onTap: (() -> Void)? = nil
 
     var body: some View {
-        NavigationLink(destination: album.map { AlbumDetailView(album: $0) }) {
+        Button(action: {
+            onTap?()
+        }) {
             VStack(alignment: .leading, spacing: 6) {
                 // アルバムアートワーク
                 if let album = album, let artworkURL = album.artworkURL, let url = URL(string: artworkURL) {

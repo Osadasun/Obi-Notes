@@ -12,11 +12,13 @@ struct ReviewCard: View {
     let review: Review
     let showUsername: Bool
     let username: String?
+    var onTap: (() -> Void)? = nil
 
-    init(review: Review, showUsername: Bool = false, username: String? = nil) {
+    init(review: Review, showUsername: Bool = false, username: String? = nil, onTap: (() -> Void)? = nil) {
         self.review = review
         self.showUsername = showUsername
         self.username = username
+        self.onTap = onTap
     }
 
     var body: some View {
@@ -78,14 +80,18 @@ struct ReviewCard: View {
         .padding()
         .background(Color.gray.opacity(0.1))
         .cornerRadius(12)
+        .onTapGesture {
+            onTap?()
+        }
     }
 }
 
 // MARK: - Review Card with User
 extension ReviewCard {
-    init(reviewWithUser: ReviewWithUser) {
+    init(reviewWithUser: ReviewWithUser, onTap: (() -> Void)? = nil) {
         self.review = reviewWithUser.review
         self.showUsername = true
         self.username = reviewWithUser.user.displayName
+        self.onTap = onTap
     }
 }

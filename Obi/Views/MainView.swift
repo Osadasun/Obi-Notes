@@ -44,6 +44,9 @@ struct MainView: View {
     @StateObject private var obiPageManager = ObiPageManager()
     @StateObject private var obiListViewModel = ObiListViewModel()
 
+    // Exploreページ管理
+    @StateObject private var explorePageManager = ExplorePageManager()
+
     // 新規作成されたアルバム/リストへのナビゲーション用
     @State private var createdUserAlbum: UserAlbum?
     @State private var createdList: MusicList?
@@ -84,6 +87,7 @@ struct MainView: View {
                     // 動的ヘッダー
                     dynamicHeader
                         .animation(.easeInOut(duration: 0.2), value: obiPageManager.currentPage.id)
+                        .animation(.easeInOut(duration: 0.2), value: explorePageManager.currentPage.id)
                         .animation(.easeInOut(duration: 0.2), value: selectedFeed)
 
                     Divider()
@@ -186,8 +190,11 @@ struct MainView: View {
     @ViewBuilder
     private var dynamicHeader: some View {
         HStack(spacing: 0) {
-            if selectedFeed == .explore || obiPageManager.currentPage.id == "cardList" {
-                // Obi一覧またはExplore: 横並びタブ
+            let isObiRoot = obiPageManager.currentPage.id == "cardList"
+            let isExploreRoot = explorePageManager.currentPage.id == "feed"
+
+            if (selectedFeed == .obi && isObiRoot) || (selectedFeed == .explore && isExploreRoot) {
+                // Obi一覧またはExploreフィード: 横並びタブ
                 HorizontalTabBar(selectedFeed: $selectedFeed, scrollPosition: $scrollPosition)
 
                 Spacer()
@@ -207,9 +214,13 @@ struct MainView: View {
                 }
                 .padding(.trailing, 16)
             } else {
-                // Obi詳細ページ: 戻るボタン + タイトル
+                // 詳細ページ: 戻るボタン + タイトル
                 Button(action: {
-                    obiPageManager.goBack()
+                    if selectedFeed == .obi {
+                        obiPageManager.goBack()
+                    } else {
+                        explorePageManager.goBack()
+                    }
                 }) {
                     Image(systemName: "chevron.left")
                         .font(.title2)
@@ -219,7 +230,7 @@ struct MainView: View {
 
                 Spacer()
 
-                Text(obiPageManager.currentPage.title)
+                Text(selectedFeed == .obi ? obiPageManager.currentPage.title : explorePageManager.currentPage.title)
                     .font(.headline)
                     .foregroundColor(.primary)
 
@@ -254,7 +265,8 @@ struct MainView: View {
                     .containerRelativeFrame(.horizontal)
                     .id(0)
 
-                HomeView(bottomSpacerHeight: bottomSpacerHeight)
+                ExploreContainerView(bottomSpacerHeight: bottomSpacerHeight, pageManager: explorePageManager)
+                    .equatable()
                     .containerRelativeFrame(.horizontal)
                     .id(1)
             }

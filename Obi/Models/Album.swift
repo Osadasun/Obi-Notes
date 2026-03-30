@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - Album
-struct Album: Identifiable, Codable {
+struct Album: Identifiable, Codable, Equatable {
     let id: String // Apple Music ID
     let title: String
     let artist: String
@@ -27,7 +27,7 @@ struct Album: Identifiable, Codable {
 }
 
 // MARK: - Track
-struct Track: Identifiable, Codable {
+struct Track: Identifiable, Codable, Equatable {
     let id: String // Apple Music ID
     let title: String
     let artist: String
