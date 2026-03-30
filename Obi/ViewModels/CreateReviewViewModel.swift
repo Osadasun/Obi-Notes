@@ -18,12 +18,16 @@ class CreateReviewViewModel: ObservableObject {
     @Published var isSubmitted: Bool = false
     @Published var showError: Bool = false
     @Published var errorMessage: String?
+    @Published var musicItem: MusicItem
 
-    private let musicItem: MusicItem
     private let supabaseService = SupabaseService.shared
 
     init(musicItem: MusicItem) {
         self.musicItem = musicItem
+    }
+
+    func updateMusicItem(_ newItem: MusicItem) {
+        self.musicItem = newItem
     }
 
     var canSubmit: Bool {

@@ -31,6 +31,7 @@ struct MainView: View {
     @State private var showCreateList = false
     @State private var showCreateAlbum = false
     @State private var showSearchSheet = false
+    @State private var showCreateReview = false
     @State private var isAddButtonPressed = false
     @State private var searchText = ""
     @State private var buttonTransitionProgress: CGFloat = 0.0 // ボタン変形用の進行度
@@ -161,6 +162,17 @@ struct MainView: View {
             }
             .sheet(isPresented: $showSearchSheet) {
                 SearchView()
+            }
+            .sheet(isPresented: $showCreateReview) {
+                NavigationStack {
+                    WriteReviewView(musicItem: MusicItem(
+                        id: "",
+                        title: "対象を選択してください",
+                        artist: "",
+                        artworkURL: nil,
+                        type: .album
+                    ))
+                }
             }
             .background(
                 Group {
@@ -297,7 +309,7 @@ struct MainView: View {
                             // レビューボタン
                             Button(action: {
                                 showMenu = false
-                                showSearchSheet = true
+                                showCreateReview = true
                             }) {
                                 HStack {
                                     Image(systemName: "star.bubble")

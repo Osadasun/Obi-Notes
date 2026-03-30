@@ -10,72 +10,81 @@ import SwiftUI
 struct WriteReviewView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var viewModel: CreateReviewViewModel
-
-    let musicItem: MusicItem
+    @State private var showingSearchSheet = false
 
     init(musicItem: MusicItem) {
-        self.musicItem = musicItem
         self._viewModel = StateObject(wrappedValue: CreateReviewViewModel(musicItem: musicItem))
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                // アルバム/楽曲情報
-                HStack(spacing: 12) {
-                    // アートワーク（楽曲の場合はCD型、アルバムの場合は角丸四角）
-                    if musicItem.type == .track {
-                        // CD型アートワーク
-                        DonutArtwork(imageUrl: musicItem.artworkURL, size: 80)
-                    } else {
-                        // アルバムの場合は従来通り
-                        if let artworkURL = musicItem.artworkURL, let url = URL(string: artworkURL) {
-                            AsyncImage(url: url) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            } placeholder: {
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.2))
-                            }
-                            .frame(width: 80, height: 80)
-                            .cornerRadius(8)
+                // アルバム/楽曲情報（タップで対象を変更）
+                Button(action: {
+                    showingSearchSheet = true
+                }) {
+                    HStack(spacing: 12) {
+                        // アートワーク（楽曲の場合はCD型、アルバムの場合は角丸四角）
+                        if viewModel.musicItem.type == .track {
+                            // CD型アートワーク
+                            DonutArtwork(imageUrl: viewModel.musicItem.artworkURL, size: 80)
                         } else {
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.2))
+                            // アルバムの場合は従来通り
+                            if let artworkURL = viewModel.musicItem.artworkURL, let url = URL(string: artworkURL) {
+                                AsyncImage(url: url) { image in
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                } placeholder: {
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.2))
+                                }
                                 .frame(width: 80, height: 80)
                                 .cornerRadius(8)
-                                .overlay(
-                                    Image(systemName: "music.note")
-                                        .foregroundColor(.gray)
-                                )
+                            } else {
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(width: 80, height: 80)
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        Image(systemName: "music.note")
+                                            .foregroundColor(.gray)
+                                    )
+                            }
                         }
-                    }
 
-                    // タイトル・アーティスト
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(musicItem.title)
-                            .font(.headline)
-                            .lineLimit(2)
+                        // タイトル・アーティスト
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(viewModel.musicItem.title)
+                                .font(.headline)
+                                .lineLimit(2)
+                                .foregroundColor(.primary)
 
-                        Text(musicItem.artist)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
+                            Text(viewModel.musicItem.artist)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
 
-                        Text(musicItem.type.rawValue)
+                            Text(viewModel.musicItem.type.rawValue)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+
+                        Spacer()
+
+                        // 変更アイコン
+                        Image(systemName: "chevron.right")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
-
-                    Spacer()
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
+                .buttonStyle(.plain)
 
                 Divider()
                     .padding(.vertical, 20)
@@ -194,6 +203,12 @@ struct WriteReviewView: View {
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
             }
+        }
+        .sheet(isPresented: $showingSearchSheet) {
+            ReviewTargetSearchView(onSelect: { selectedItem in
+                viewModel.updateMusicItem(selectedItem)
+                showingSearchSheet = false
+            })
         }
     }
 }
