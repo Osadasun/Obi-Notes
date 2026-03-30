@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct MusicList: Identifiable, Codable {
+struct MusicList: Identifiable, Codable, Hashable {
     let id: UUID
     let userId: UUID
     var name: String

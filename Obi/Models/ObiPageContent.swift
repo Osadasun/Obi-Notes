@@ -1,0 +1,41 @@
+//
+//  ObiPageContent.swift
+//  Obi
+//
+//  Obiページのコンテンツタイプ定義
+//
+
+import Foundation
+
+enum ObiPageContent: Identifiable, Equatable {
+    case cardList
+    case defaultList(MyListCategory)
+    case customList(MusicList)
+    case userAlbum(UserAlbum)
+
+    var id: String {
+        switch self {
+        case .cardList:
+            return "cardList"
+        case .defaultList(let category):
+            return "defaultList_\(category.rawValue)"
+        case .customList(let list):
+            return "customList_\(list.id.uuidString)"
+        case .userAlbum(let album):
+            return "userAlbum_\(album.id)"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .cardList:
+            return "Obi"
+        case .defaultList(let category):
+            return category.rawValue
+        case .customList(let list):
+            return list.name
+        case .userAlbum(let album):
+            return album.name
+        }
+    }
+}

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct UserAlbum: Identifiable, Codable, Equatable {
+struct UserAlbum: Identifiable, Codable, Equatable, Hashable {
     let id: String
     let userId: String
     let name: String
@@ -28,7 +28,7 @@ struct UserAlbum: Identifiable, Codable, Equatable {
 }
 
 // ObiViewで表示するための統合型
-enum ObiItem: Identifiable {
+enum ObiItem: Identifiable, Hashable {
     case list(MusicList)
     case userAlbum(UserAlbum)
 

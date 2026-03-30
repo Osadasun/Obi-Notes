@@ -40,6 +40,10 @@ struct MainView: View {
     @FocusState private var isSearchFieldFocused: Bool
     @Namespace private var animation
 
+    // Obiページ管理
+    @StateObject private var obiPageManager = ObiPageManager()
+    @StateObject private var obiListViewModel = ObiListViewModel()
+
     // 新規作成されたアルバム/リストへのナビゲーション用
     @State private var createdUserAlbum: UserAlbum?
     @State private var createdList: MusicList?
@@ -77,31 +81,10 @@ struct MainView: View {
         NavigationStack {
             ZStack(alignment: .bottom) {
                 VStack(spacing: 0) {
-                    // ヘッダー（横並びタブ + プロフィール）
-                    HStack(spacing: 0) {
-                        // 横並びタブ
-                        HorizontalTabBar(selectedFeed: $selectedFeed, scrollPosition: $scrollPosition)
-
-                        Spacer()
-
-                        // プロフィールボタン
-                        Button(action: {
-                            showProfile = true
-                        }) {
-                            Circle()
-                                .fill(Color.gray.opacity(0.2))
-                                .frame(width: 32, height: 32)
-                                .overlay(
-                                    Image(systemName: "person.fill")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                )
-                        }
-                        .padding(.trailing, 16)
-                    }
-                    .padding(.top, 8)
-                    .padding(.bottom, 8)
-                    .background(.background)
+                    // 動的ヘッダー
+                    dynamicHeader
+                        .animation(.easeInOut(duration: 0.2), value: obiPageManager.currentPage.id)
+                        .animation(.easeInOut(duration: 0.2), value: selectedFeed)
 
                     Divider()
 
@@ -200,6 +183,60 @@ struct MainView: View {
         }
     }
 
+    @ViewBuilder
+    private var dynamicHeader: some View {
+        HStack(spacing: 0) {
+            if selectedFeed == .explore || obiPageManager.currentPage.id == "cardList" {
+                // Obi一覧またはExplore: 横並びタブ
+                HorizontalTabBar(selectedFeed: $selectedFeed, scrollPosition: $scrollPosition)
+
+                Spacer()
+
+                // プロフィールボタン
+                Button(action: {
+                    showProfile = true
+                }) {
+                    Circle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 32, height: 32)
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        )
+                }
+                .padding(.trailing, 16)
+            } else {
+                // Obi詳細ページ: 戻るボタン + タイトル
+                Button(action: {
+                    obiPageManager.goBack()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.title2)
+                        .foregroundColor(.primary)
+                }
+                .padding(.leading, 16)
+
+                Spacer()
+
+                Text(obiPageManager.currentPage.title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                // 右側のスペース（メニューボタン用に確保）
+                Color.clear
+                    .frame(width: 44)
+                    .padding(.trailing, 16)
+            }
+        }
+        .frame(height: 44)
+        .padding(.top, 8)
+        .padding(.bottom, 8)
+        .background(.background)
+    }
+
     private var pagingScrollView: some View {
         GeometryReader { geometry in
             scrollViewContent(geometry: geometry)
@@ -212,7 +249,8 @@ struct MainView: View {
 
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 0) {
-                ObiView(bottomSpacerHeight: bottomSpacerHeight)
+                ObiContainerView(bottomSpacerHeight: bottomSpacerHeight, pageManager: obiPageManager, listViewModel: obiListViewModel)
+                    .equatable()
                     .containerRelativeFrame(.horizontal)
                     .id(0)
 
@@ -246,6 +284,9 @@ struct MainView: View {
         }
         .onAppear {
             setupInitialState(bottomPadding: bottomPadding)
+        }
+        .task {
+            await obiListViewModel.loadListCounts()
         }
         .sheet(isPresented: $showAddAlbumSheet) {
             if let pendingMusic = deepLinkManager.pendingMusic {
@@ -290,6 +331,7 @@ struct MainView: View {
     }
 
     private func setupInitialState(bottomPadding: CGFloat) {
+        print("🚀 MainView setupInitialState - selectedFeed: \(selectedFeed), obiPageManager.pages: \(obiPageManager.pages.count), currentIndex: \(obiPageManager.currentIndex)")
         bottomSpacerHeight = abs(bottomPadding)
         scrollPosition = selectedFeed == .explore ? 1 : 0
         buttonTransitionProgress = selectedFeed == .explore ? 1.0 : 0.0
@@ -620,139 +662,6 @@ struct FloatingButton: View {
                     .foregroundColor(foregroundColor)
             }
         }
-    }
-}
-
-// MARK: - Obi View (Lists)
-struct ObiView: View {
-    let bottomSpacerHeight: CGFloat
-    @StateObject private var viewModel = ObiListViewModel()
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 24) {
-                    // 上部の正方形グレー背景エリア（ObiCard表示エリア）
-                    GeometryReader { geometry in
-                        NavigationLink(destination: ObiListView()) {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.gray.opacity(0.2))
-                                .frame(width: geometry.size.width, height: geometry.size.width)
-                                .overlay(
-                                    // ObiCardを中央に配置
-                                    Group {
-                                        if let review = viewModel.latestReview {
-                                            ObiCard(
-                                                artworkURL: review.albumArt,
-                                                reviewTitle: review.reviewTitle ?? review.title,
-                                                reviewText: review.text ?? "レビューテキストがありません",
-                                                cardHeight: geometry.size.width - 24,
-                                                style: ObiCardStyle.forTargetType(review.targetType),
-                                                rating: review.rating
-                                            )
-                                        } else {
-                                            // レビューがない場合はプレースホルダー
-                                            VStack(spacing: 16) {
-                                                Image(systemName: "music.note.list")
-                                                    .font(.system(size: 48))
-                                                    .foregroundColor(.gray.opacity(0.5))
-                                                Text("レビューを書いてみましょう")
-                                                    .font(.subheadline)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                        }
-                                    }
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .aspectRatio(1, contentMode: .fit)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 24)
-
-                    if viewModel.isLoading {
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                    } else {
-                        // デフォルトリスト + カスタムリスト + ユーザーアルバム（統一された2列グリッド）
-                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], spacing: 20) {
-                            // デフォルトリスト
-                            NavigationLink(destination: ListDetailView(listType: .reviewed)) {
-                                ListCard(
-                                    title: "レビュー済み",
-                                    count: viewModel.reviewedCount,
-                                    artworkURLs: viewModel.reviewedArtworks
-                                )
-                            }
-                            .buttonStyle(.plain)
-
-                            NavigationLink(destination: ListDetailView(listType: .favorite)) {
-                                ListCard(
-                                    title: "お気に入り",
-                                    count: viewModel.favoriteCount,
-                                    artworkURLs: viewModel.favoriteArtworks
-                                )
-                            }
-                            .buttonStyle(.plain)
-
-                            NavigationLink(destination: ListDetailView(listType: .listened)) {
-                                ListCard(
-                                    title: "聴いた",
-                                    count: viewModel.listenedCount,
-                                    artworkURLs: viewModel.listenedArtworks
-                                )
-                            }
-                            .buttonStyle(.plain)
-
-                            NavigationLink(destination: ListDetailView(listType: .wishlist)) {
-                                ListCard(
-                                    title: "聴きたい",
-                                    count: viewModel.wishlistCount,
-                                    artworkURLs: viewModel.wishlistArtworks
-                                )
-                            }
-                            .buttonStyle(.plain)
-
-                            // カスタムリスト + ユーザーアルバム
-                            ForEach(viewModel.obiItems) { item in
-                                switch item {
-                                case .list(let list):
-                                    NavigationLink(destination: CustomListDetailView(list: list)) {
-                                        ListCard(
-                                            title: list.name,
-                                            count: viewModel.customListCounts[list.id] ?? 0,
-                                            artworkURLs: viewModel.customListArtworks[list.id] ?? []
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
-
-                                case .userAlbum(let album):
-                                    NavigationLink(destination: UserAlbumDetailView(album: album)) {
-                                        AlbumCard(
-                                            title: album.name,
-                                            artistName: album.artistName,
-                                            colorHex: album.colorHex
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 24)
-                          .padding(.top, 16)
-                    }
-
-                    // TabViewの下部拡張分のスペーサー
-                    Color.clear
-                        .frame(height: 120)
-                }
-            }
-            .task {
-                await viewModel.loadListCounts()
-            }
-            .refreshable {
-                await viewModel.loadListCounts()
-            }
     }
 }
 
