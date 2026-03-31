@@ -9,12 +9,14 @@ import SwiftUI
 
 struct ListDetailView: View {
     let listType: MyListCategory
+    var onNavigateToAlbum: ((Album) -> Void)? = nil
     @StateObject private var viewModel: ListDetailViewModel
     @Environment(\.dismiss) var dismiss
     @State private var showingSearchSheet = false
 
-    init(listType: MyListCategory) {
+    init(listType: MyListCategory, onNavigateToAlbum: ((Album) -> Void)? = nil) {
         self.listType = listType
+        self.onNavigateToAlbum = onNavigateToAlbum
         self._viewModel = StateObject(wrappedValue: ListDetailViewModel(listType: listType))
     }
 
@@ -39,8 +41,17 @@ struct ListDetailView: View {
                         GridItem(.flexible(), spacing: 20)
                     ], spacing: 20) {
                         ForEach(viewModel.albums) { album in
-                            NavigationLink(destination: AlbumDetailView(album: album)) {
-                                AlbumGridItem(album: album)
+                            if let onNavigate = onNavigateToAlbum {
+                                Button(action: {
+                                    onNavigate(album)
+                                }) {
+                                    AlbumGridItem(album: album)
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                NavigationLink(destination: AlbumDetailView(album: album)) {
+                                    AlbumGridItem(album: album)
+                                }
                             }
                         }
                     }

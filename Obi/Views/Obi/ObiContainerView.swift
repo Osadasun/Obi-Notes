@@ -52,8 +52,13 @@ struct ObiContainerView: View, Equatable {
             )
 
         case .defaultList(let category):
-            ListDetailView(listType: category)
-                .navigationBarHidden(true)
+            ListDetailView(
+                listType: category,
+                onNavigateToAlbum: { album in
+                    pageManager.navigateTo(.albumDetail(album))
+                }
+            )
+            .navigationBarHidden(true)
 
         case .customList(let list):
             CustomListDetailView(
@@ -65,11 +70,20 @@ struct ObiContainerView: View, Equatable {
             .navigationBarHidden(true)
 
         case .userAlbum(let album):
-            UserAlbumDetailView(album: album)
-                .navigationBarHidden(true)
+            UserAlbumDetailView(
+                album: album,
+                onNavigateToTrack: { track in
+                    pageManager.navigateTo(.trackDetail(track))
+                }
+            )
+            .navigationBarHidden(true)
 
         case .albumDetail(let album):
             AlbumDetailView(album: album)
+                .navigationBarHidden(true)
+
+        case .trackDetail(let track):
+            TrackDetailView(track: track)
                 .navigationBarHidden(true)
         }
     }

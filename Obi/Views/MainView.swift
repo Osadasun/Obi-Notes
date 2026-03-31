@@ -218,9 +218,9 @@ struct MainView: View {
                                 .foregroundColor(.gray)
                         )
                 }
-                .padding(.trailing, 16)
+                .padding(.trailing, 24)
             } else {
-                // 詳細ページ: 戻るボタン + タイトル
+                // 詳細ページ: 戻るボタン (+ タイトル)
                 Button(action: {
                     if selectedFeed == .obi {
                         obiPageManager.goBack()
@@ -232,20 +232,28 @@ struct MainView: View {
                         .font(.title2)
                         .foregroundColor(.primary)
                 }
-                .padding(.leading, 16)
+                .padding(.leading, 24)
 
                 Spacer()
 
-                Text(selectedFeed == .obi ? obiPageManager.currentPage.title : explorePageManager.currentPage.title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
+                // リスト詳細の場合のみタイトル表示
+                if selectedFeed == .obi {
+                    switch obiPageManager.currentPage {
+                    case .defaultList, .customList:
+                        Text(obiPageManager.currentPage.title)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                    default:
+                        EmptyView()
+                    }
+                }
 
                 Spacer()
 
                 // 右側のスペース（メニューボタン用に確保）
                 Color.clear
                     .frame(width: 44)
-                    .padding(.trailing, 16)
+                    .padding(.trailing, 24)
             }
         }
         .frame(height: 44)

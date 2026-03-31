@@ -38,4 +38,19 @@ enum ExplorePageContent: Identifiable, Equatable {
             return "レビュー"
         }
     }
+
+    static func == (lhs: ExplorePageContent, rhs: ExplorePageContent) -> Bool {
+        switch (lhs, rhs) {
+        case (.feed, .feed):
+            return true
+        case (.albumDetail(let lhsAlbum), .albumDetail(let rhsAlbum)):
+            return lhsAlbum.id == rhsAlbum.id
+        case (.trackDetail(let lhsTrack), .trackDetail(let rhsTrack)):
+            return lhsTrack.id == rhsTrack.id
+        case (.reviewDetail(let lhsReview), .reviewDetail(let rhsReview)):
+            return lhsReview.id == rhsReview.id
+        default:
+            return false
+        }
+    }
 }

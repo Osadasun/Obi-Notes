@@ -9,13 +9,15 @@ import SwiftUI
 
 struct UserAlbumDetailView: View {
     let album: UserAlbum
+    var onNavigateToTrack: ((Track) -> Void)? = nil
     @StateObject private var viewModel: UserAlbumDetailViewModel
     @State private var editedName: String
     @State private var showingSearchSheet = false
     @FocusState private var isNameFieldFocused: Bool
 
-    init(album: UserAlbum) {
+    init(album: UserAlbum, onNavigateToTrack: ((Track) -> Void)? = nil) {
         self.album = album
+        self.onNavigateToTrack = onNavigateToTrack
         self._viewModel = StateObject(wrappedValue: UserAlbumDetailViewModel(albumId: album.id))
         self._editedName = State(initialValue: album.name)
     }
@@ -96,29 +98,42 @@ struct UserAlbumDetailView: View {
                     .padding(.vertical, 48)
                 } else {
                     VStack(alignment: .leading, spacing: 0) {
-                        ForEach(viewModel.tracks) { track in
+                        ForEach(viewModel.tracks) { item in
                             VStack(spacing: 0) {
-                                // TODO: トラック詳細への遷移を実装
-                                HStack(spacing: 12) {
-                                    // CD型アートワーク
-                                    DonutArtwork(imageUrl: track.albumArt, size: 50)
+                                Button(action: {
+                                    let track = Track(
+                                        id: item.targetId,
+                                        title: item.title,
+                                        artist: item.artist,
+                                        albumTitle: nil,
+                                        artworkURL: item.albumArt,
+                                        duration: nil,
+                                        trackNumber: nil
+                                    )
+                                    onNavigateToTrack?(track)
+                                }) {
+                                    HStack(spacing: 12) {
+                                        // CD型アートワーク
+                                        DonutArtwork(imageUrl: item.albumArt, size: 50)
 
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(track.title)
-                                            .font(.body)
-                                            .fontWeight(.medium)
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(item.title)
+                                                .font(.body)
+                                                .fontWeight(.medium)
 
-                                        Text(track.artist)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
+                                            Text(item.artist)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+
+                                        Spacer()
                                     }
-
-                                    Spacer()
                                 }
+                                .buttonStyle(.plain)
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 12)
 
-                                if track.id != viewModel.tracks.last?.id {
+                                if item.id != viewModel.tracks.last?.id {
                                     Divider()
                                         .padding(.leading, 86)
                                 }
