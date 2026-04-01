@@ -21,8 +21,7 @@ struct ListDetailView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            ScrollView {
+        ScrollView {
                 if viewModel.isLoading {
                     ProgressView()
                         .frame(maxWidth: .infinity)
@@ -58,25 +57,8 @@ struct ListDetailView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 40)
                 }
-            }
 
-            // フローティングアクションボタン
-            Button(action: {
-                showingSearchSheet = true
-            }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 56, height: 56)
-                        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
-
-                    Image(systemName: "plus")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(.purple)
-                }
-            }
-            .padding(.trailing, 20)
-            .padding(.bottom, 20)
+            Color.clear.frame(height: 120)
         }
         .navigationTitle(listType.rawValue)
         .navigationBarTitleDisplayMode(.inline)

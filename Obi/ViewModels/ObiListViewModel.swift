@@ -76,8 +76,8 @@ class ObiListViewModel: ObservableObject {
                     wishlistCount = items.count
                     wishlistArtworks = Array(artworks)
                 case .none:
-                    // カスタムリストの場合
-                    if list.type == .custom {
+                    // カスタムリストの場合（親がないトップレベルのみ）
+                    if list.type == .custom && list.parentListId == nil {
                         customListsArray.append(list)
                         customListCounts[list.id] = items.count
                         customListArtworks[list.id] = Array(artworks)
@@ -87,19 +87,20 @@ class ObiListViewModel: ObservableObject {
 
             customLists = customListsArray
 
-            // ユーザーアルバムを取得
-            let albums = try await supabaseService.fetchUserAlbums(userId: userId.uuidString)
-            userAlbums = albums
+            // ユーザーアルバムを取得（親がないトップレベルのみ）
+            let allAlbums = try await supabaseService.fetchUserAlbums(userId: userId.uuidString)
+            let topLevelAlbums = allAlbums.filter { $0.parentListId == nil }
+            userAlbums = topLevelAlbums
 
             // TODO: ユーザーアルバムの曲数を取得する（現在は0件）
-            for album in albums {
+            for album in topLevelAlbums {
                 userAlbumCounts[album.id] = 0 // 仮の値（実装予定）
             }
 
             // ObiItemsに統合（カスタムリストとユーザーアルバムをマージ）
             var items: [ObiItem] = []
             items.append(contentsOf: customListsArray.map { .list($0) })
-            items.append(contentsOf: albums.map { .userAlbum($0) })
+            items.append(contentsOf: topLevelAlbums.map { .userAlbum($0) })
             obiItems = items
 
             print("✅ リスト件数取得成功: カスタムリスト\(customLists.count)件、ユーザーアルバム\(userAlbums.count)件")

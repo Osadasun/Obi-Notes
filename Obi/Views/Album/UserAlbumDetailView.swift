@@ -10,14 +10,18 @@ import SwiftUI
 struct UserAlbumDetailView: View {
     let album: UserAlbum
     var onNavigateToTrack: ((Track) -> Void)? = nil
+    var onNavigateToList: ((MusicList) -> Void)? = nil
+    var onNavigateToUserAlbum: ((UserAlbum) -> Void)? = nil
     @StateObject private var viewModel: UserAlbumDetailViewModel
     @State private var editedName: String
     @State private var showingSearchSheet = false
     @FocusState private var isNameFieldFocused: Bool
 
-    init(album: UserAlbum, onNavigateToTrack: ((Track) -> Void)? = nil) {
+    init(album: UserAlbum, onNavigateToTrack: ((Track) -> Void)? = nil, onNavigateToList: ((MusicList) -> Void)? = nil, onNavigateToUserAlbum: ((UserAlbum) -> Void)? = nil) {
         self.album = album
         self.onNavigateToTrack = onNavigateToTrack
+        self.onNavigateToList = onNavigateToList
+        self.onNavigateToUserAlbum = onNavigateToUserAlbum
         self._viewModel = StateObject(wrappedValue: UserAlbumDetailViewModel(albumId: album.id))
         self._editedName = State(initialValue: album.name)
     }
@@ -63,30 +67,55 @@ struct UserAlbumDetailView: View {
                 }
                 .padding(.top, 32)
 
-                // 曲を追加ボタン
-                Button(action: {
-                    showingSearchSheet = true
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "plus")
-                            .font(.body)
-                        Text("曲を追加")
-                            .font(.body)
-                            .fontWeight(.medium)
+                // 子リスト/アルバムセクション（存在する場合のみ表示）
+                if !viewModel.childLists.isEmpty || !viewModel.childUserAlbums.isEmpty {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("リスト・アルバム")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 24)
+
+                        LazyVGrid(columns: [
+                            GridItem(.flexible(), spacing: 20),
+                            GridItem(.flexible(), spacing: 20)
+                        ], spacing: 20) {
+                            // 子カスタムリスト
+                            ForEach(viewModel.childLists) { childList in
+                                Button(action: {
+                                    onNavigateToList?(childList)
+                                }) {
+                                    ListCard(
+                                        title: childList.name,
+                                        count: 0,
+                                        artworkURLs: []
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            // 子ユーザーアルバム
+                            ForEach(viewModel.childUserAlbums) { childAlbum in
+                                Button(action: {
+                                    onNavigateToUserAlbum?(childAlbum)
+                                }) {
+                                    AlbumCard(
+                                        title: childAlbum.name,
+                                        artistName: childAlbum.artistName,
+                                        colorHex: childAlbum.colorHex
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 24)
                     }
-                    .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(12)
                 }
-                .padding(.horizontal, 24)
 
                 // 曲リスト
                 if viewModel.isLoading {
                     ProgressView()
                         .padding()
-                } else if viewModel.tracks.isEmpty {
+                } else if viewModel.tracks.isEmpty && viewModel.childLists.isEmpty && viewModel.childUserAlbums.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "music.note")
                             .font(.system(size: 48))
@@ -96,6 +125,9 @@ struct UserAlbumDetailView: View {
                             .foregroundColor(.secondary)
                     }
                     .padding(.vertical, 48)
+                } else if viewModel.tracks.isEmpty {
+                    // 子リスト/アルバムは存在するが曲がない場合は何も表示しない
+                    EmptyView()
                 } else {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(viewModel.tracks) { item in
@@ -142,7 +174,7 @@ struct UserAlbumDetailView: View {
                     }
                 }
 
-                Color.clear.frame(height: 60)
+                Color.clear.frame(height: 120)
             }
         }
         .navigationTitle("")

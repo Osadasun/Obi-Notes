@@ -11,6 +11,8 @@ import Combine
 @MainActor
 class UserAlbumDetailViewModel: ObservableObject {
     @Published var tracks: [ListItem] = []
+    @Published var childLists: [MusicList] = []
+    @Published var childUserAlbums: [UserAlbum] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
@@ -27,7 +29,18 @@ class UserAlbumDetailViewModel: ObservableObject {
 
         do {
             tracks = try await supabaseService.fetchUserAlbumTracks(albumId: albumId)
-            print("✅ [UserAlbumDetail] アルバム \(albumId) のトラック取得完了: \(tracks.count)件")
+
+            // 子リストを取得（UUID形式で保存されている場合の変換が必要）
+            if let parentUUID = UUID(uuidString: albumId) {
+                childLists = try await supabaseService.fetchChildLists(parentListId: parentUUID)
+            } else {
+                childLists = []
+            }
+
+            // 子ユーザーアルバムを取得
+            childUserAlbums = try await supabaseService.fetchChildUserAlbums(parentListId: albumId)
+
+            print("✅ [UserAlbumDetail] アルバム \(albumId) のトラック取得完了: \(tracks.count)件, 子リスト: \(childLists.count)件, 子アルバム: \(childUserAlbums.count)件")
         } catch {
             print("❌ [UserAlbumDetail] トラック取得失敗: \(error)")
             errorMessage = "トラックの取得に失敗しました"

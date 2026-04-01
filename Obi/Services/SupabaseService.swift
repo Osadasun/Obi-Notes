@@ -290,13 +290,46 @@ class SupabaseService {
         return response
     }
 
-    func createList(_ list: MusicList) async throws -> MusicList {
+    func fetchChildLists(parentListId: UUID) async throws -> [MusicList] {
         guard let client = client else {
             throw SupabaseError.notConfigured
         }
+
+        let response: [MusicList] = try await client.database
+            .from("lists")
+            .select()
+            .eq("parent_list_id", value: parentListId.uuidString)
+            .order("created_at", ascending: false)
+            .execute()
+            .value
+
+        print("✅ [fetchChildLists] Found \(response.count) child lists for parent: \(parentListId)")
+        return response
+    }
+
+    func createList(_ list: MusicList, parentListId: UUID? = nil) async throws -> MusicList {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        var listToInsert = list
+        if let parentId = parentListId {
+            listToInsert = MusicList(
+                id: list.id,
+                userId: list.userId,
+                name: list.name,
+                description: list.description,
+                isPublic: list.isPublic,
+                type: list.type,
+                defaultType: list.defaultType,
+                createdAt: list.createdAt,
+                parentListId: parentId
+            )
+        }
+
         let response: MusicList = try await client.database
             .from("lists")
-            .insert(list)
+            .insert(listToInsert)
             .select()
             .single()
             .execute()
@@ -349,7 +382,8 @@ class SupabaseService {
                 isPublic: false,
                 type: .default,
                 defaultType: type,
-                createdAt: Date()
+                createdAt: Date(),
+                parentListId: nil
             )
 
             do {
@@ -525,7 +559,24 @@ class SupabaseService {
         return response
     }
 
-    func createUserAlbum(userId: String, name: String, artistName: String, colorHex: String) async throws -> UserAlbum {
+    func fetchChildUserAlbums(parentListId: String) async throws -> [UserAlbum] {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        let response: [UserAlbum] = try await client
+            .from("user_albums")
+            .select()
+            .eq("parent_list_id", value: parentListId)
+            .order("created_at", ascending: false)
+            .execute()
+            .value
+
+        print("✅ [fetchChildUserAlbums] Found \(response.count) child albums for parent: \(parentListId)")
+        return response
+    }
+
+    func createUserAlbum(userId: String, name: String, artistName: String, colorHex: String, parentListId: String? = nil) async throws -> UserAlbum {
         guard let client = client else {
             throw SupabaseError.notConfigured
         }
@@ -535,17 +586,25 @@ class SupabaseService {
             let name: String
             let artist_name: String
             let color_hex: String
+            let parent_list_id: UUID?
         }
 
         guard let userUUID = UUID(uuidString: userId) else {
             throw SupabaseError.notConfigured
         }
 
+        let parentUUID: UUID? = if let parentId = parentListId {
+            UUID(uuidString: parentId)
+        } else {
+            nil
+        }
+
         let newAlbum = NewAlbum(
             user_id: userUUID,
             name: name,
             artist_name: artistName,
-            color_hex: colorHex
+            color_hex: colorHex,
+            parent_list_id: parentUUID
         )
 
         let response: UserAlbum = try await client

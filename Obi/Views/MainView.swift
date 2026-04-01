@@ -743,7 +743,8 @@ struct MainView: View {
                     isPublic: updatedList.isPublic,
                     type: updatedList.type,
                     defaultType: updatedList.defaultType,
-                    createdAt: updatedList.createdAt
+                    createdAt: updatedList.createdAt,
+                    parentListId: updatedList.parentListId
                 )
                 obiPageManager.updateCurrentPage(.customList(updatedList))
             }
@@ -812,6 +813,23 @@ struct MainView: View {
             return
         }
 
+        // 親リストIDを取得（現在表示中のリスト詳細画面がある場合）
+        // デフォルトリストは親として設定しない（親子関係は不要）
+        var parentListId: UUID? = nil
+        print("🔍 [createNewList] selectedFeed: \(selectedFeed)")
+        print("🔍 [createNewList] currentPage: \(obiPageManager.currentPage.id)")
+        if selectedFeed == .obi {
+            switch obiPageManager.currentPage {
+            case .customList(let list):
+                parentListId = list.id
+                print("✅ [createNewList] Found parent list: \(list.name) (id: \(list.id))")
+            default:
+                print("ℹ️ [createNewList] Not in customList page")
+                break
+            }
+        }
+        print("🔍 [createNewList] parentListId: \(String(describing: parentListId))")
+
         do {
             let newList = MusicList(
                 id: UUID(),
@@ -821,11 +839,17 @@ struct MainView: View {
                 isPublic: false,
                 type: .custom,
                 defaultType: nil,
-                createdAt: Date()
+                createdAt: Date(),
+                parentListId: parentListId
             )
 
-            let createdList = try await SupabaseService.shared.createList(newList)
-            print("✅ [MainView] List created: \(createdList.name)")
+            let createdList = try await SupabaseService.shared.createList(newList, parentListId: parentListId)
+
+            if let parentId = parentListId {
+                print("✅ [MainView] List created as child: \(createdList.name), parent: \(parentId)")
+            } else {
+                print("✅ [MainView] List created: \(createdList.name)")
+            }
 
             // 作成されたリストへナビゲート
             self.createdList = createdList
@@ -842,15 +866,38 @@ struct MainView: View {
             return
         }
 
+        // 親リストIDを取得（現在表示中のリスト詳細画面がある場合）
+        // デフォルトリストは親として設定しない（親子関係は不要）
+        var parentListId: String? = nil
+        print("🔍 [createNewAlbum] selectedFeed: \(selectedFeed)")
+        print("🔍 [createNewAlbum] currentPage: \(obiPageManager.currentPage.id)")
+        if selectedFeed == .obi {
+            switch obiPageManager.currentPage {
+            case .customList(let list):
+                parentListId = list.id.uuidString
+                print("✅ [createNewAlbum] Found parent list: \(list.name) (id: \(list.id))")
+            default:
+                print("ℹ️ [createNewAlbum] Not in customList page")
+                break
+            }
+        }
+        print("🔍 [createNewAlbum] parentListId: \(String(describing: parentListId))")
+
         do {
             let artistName = UserManager.shared.displayName
             let createdAlbum = try await SupabaseService.shared.createUserAlbum(
                 userId: userId.uuidString,
                 name: "タイトルなし",
                 artistName: artistName,
-                colorHex: "#9F7AEA" // デフォルトのパープル
+                colorHex: "#9F7AEA", // デフォルトのパープル
+                parentListId: parentListId
             )
-            print("✅ [MainView] Album created: \(createdAlbum.name)")
+
+            if let parentId = parentListId {
+                print("✅ [MainView] Album created as child: \(createdAlbum.name), parent: \(parentId)")
+            } else {
+                print("✅ [MainView] Album created: \(createdAlbum.name)")
+            }
 
             // 作成されたアルバムへナビゲート
             self.createdUserAlbum = createdAlbum
@@ -921,58 +968,105 @@ struct FloatingButton: View {
 struct CustomListDetailView: View {
     let list: MusicList
     var onNavigateToAlbum: ((Album) -> Void)? = nil
+    var onNavigateToList: ((MusicList) -> Void)? = nil
+    var onNavigateToUserAlbum: ((UserAlbum) -> Void)? = nil
     @StateObject private var viewModel: CustomListDetailViewModel
     @State private var showingSearchSheet = false
     @State private var editedName: String
     @State private var isEditingName = false
     @FocusState private var isNameFieldFocused: Bool
 
-    init(list: MusicList, onNavigateToAlbum: ((Album) -> Void)? = nil) {
+    init(list: MusicList, onNavigateToAlbum: ((Album) -> Void)? = nil, onNavigateToList: ((MusicList) -> Void)? = nil, onNavigateToUserAlbum: ((UserAlbum) -> Void)? = nil) {
         self.list = list
         self.onNavigateToAlbum = onNavigateToAlbum
+        self.onNavigateToList = onNavigateToList
+        self.onNavigateToUserAlbum = onNavigateToUserAlbum
         self._viewModel = StateObject(wrappedValue: CustomListDetailViewModel(listId: list.id))
         self._editedName = State(initialValue: list.name)
     }
 
     var body: some View {
         ScrollView {
+            VStack(spacing: 24) {
                 if viewModel.isLoading {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                         .padding()
-                } else if viewModel.albums.isEmpty {
-                    ContentUnavailableView(
-                        "アルバムがありません",
-                        systemImage: "music.note",
-                        description: Text("アルバムを追加してみましょう")
-                    )
-                    .padding(.vertical, 40)
                 } else {
-                    // 2列グリッド（画像のみ）
-                    LazyVGrid(columns: [
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12)
-                    ], spacing: 12) {
-                        ForEach(viewModel.albums) { album in
-                            if let onNavigate = onNavigateToAlbum {
+                    // 子リスト/アルバムセクション（存在する場合のみ表示）
+                    if !viewModel.childLists.isEmpty || !viewModel.childUserAlbums.isEmpty {
+                        LazyVGrid(columns: [
+                            GridItem(.flexible(), spacing: 20),
+                            GridItem(.flexible(), spacing: 20)
+                        ], spacing: 20) {
+                            // 子カスタムリスト
+                            ForEach(viewModel.childLists) { childList in
                                 Button(action: {
-                                    onNavigate(album)
+                                    onNavigateToList?(childList)
                                 }) {
-                                    AlbumGridItem(album: album)
+                                    ListCard(
+                                        title: childList.name,
+                                        count: 0,
+                                        artworkURLs: []
+                                    )
                                 }
                                 .buttonStyle(.plain)
-                            } else {
-                                NavigationLink(destination: AlbumDetailView(album: album)) {
-                                    AlbumGridItem(album: album)
+                            }
+
+                            // 子ユーザーアルバム
+                            ForEach(viewModel.childUserAlbums) { childAlbum in
+                                Button(action: {
+                                    onNavigateToUserAlbum?(childAlbum)
+                                }) {
+                                    AlbumCard(
+                                        title: childAlbum.name,
+                                        artistName: childAlbum.artistName,
+                                        colorHex: childAlbum.colorHex
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 40)
+                    }
+
+                    // 音楽アルバムセクション
+                    if viewModel.albums.isEmpty && viewModel.childLists.isEmpty && viewModel.childUserAlbums.isEmpty {
+                        ContentUnavailableView(
+                            "アイテムがありません",
+                            systemImage: "music.note",
+                            description: Text("アルバムやリストを追加してみましょう")
+                        )
+                        .padding(.vertical, 40)
+                    } else if !viewModel.albums.isEmpty {
+                        // 2列グリッド（画像のみ）
+                        LazyVGrid(columns: [
+                            GridItem(.flexible(), spacing: 12),
+                            GridItem(.flexible(), spacing: 12)
+                        ], spacing: 12) {
+                            ForEach(viewModel.albums) { album in
+                                if let onNavigate = onNavigateToAlbum {
+                                    Button(action: {
+                                        onNavigate(album)
+                                    }) {
+                                        AlbumGridItem(album: album)
+                                    }
+                                    .buttonStyle(.plain)
+                                } else {
+                                    NavigationLink(destination: AlbumDetailView(album: album)) {
+                                        AlbumGridItem(album: album)
+                                    }
                                 }
                             }
                         }
+                        .padding(.horizontal, 24)
+                        .padding(.top, viewModel.childLists.isEmpty && viewModel.childUserAlbums.isEmpty ? 40 : 20)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 40)
                 }
 
-            Color.clear.frame(height: 120)
+                Color.clear.frame(height: 120)
+            }
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)

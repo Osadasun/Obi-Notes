@@ -65,6 +65,12 @@ struct ObiContainerView: View, Equatable {
                 list: list,
                 onNavigateToAlbum: { album in
                     pageManager.navigateTo(.albumDetail(album))
+                },
+                onNavigateToList: { childList in
+                    pageManager.navigateTo(.customList(childList))
+                },
+                onNavigateToUserAlbum: { childAlbum in
+                    pageManager.navigateTo(.userAlbum(childAlbum))
                 }
             )
             .navigationBarHidden(true)
@@ -74,6 +80,12 @@ struct ObiContainerView: View, Equatable {
                 album: album,
                 onNavigateToTrack: { track in
                     pageManager.navigateTo(.trackDetail(track))
+                },
+                onNavigateToList: { childList in
+                    pageManager.navigateTo(.customList(childList))
+                },
+                onNavigateToUserAlbum: { childAlbum in
+                    pageManager.navigateTo(.userAlbum(childAlbum))
                 }
             )
             .navigationBarHidden(true)

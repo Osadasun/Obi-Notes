@@ -15,6 +15,7 @@ struct UserAlbum: Identifiable, Codable, Equatable, Hashable {
     let colorHex: String // 単色カラー（例: "#FF5733"）
     let createdAt: Date
     let updatedAt: Date
+    var parentListId: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -24,6 +25,7 @@ struct UserAlbum: Identifiable, Codable, Equatable, Hashable {
         case colorHex = "color_hex"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case parentListId = "parent_list_id"
     }
 }
 

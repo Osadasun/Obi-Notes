@@ -11,6 +11,8 @@ import Combine
 @MainActor
 class CustomListDetailViewModel: ObservableObject {
     @Published var albums: [Album] = []
+    @Published var childLists: [MusicList] = []
+    @Published var childUserAlbums: [UserAlbum] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
@@ -48,7 +50,13 @@ class CustomListDetailViewModel: ObservableObject {
                 )
             }
 
-            print("✅ カスタムリストアルバム取得成功: \(albums.count)件")
+            // 子リストを取得
+            childLists = try await supabaseService.fetchChildLists(parentListId: listId)
+
+            // 子ユーザーアルバムを取得
+            childUserAlbums = try await supabaseService.fetchChildUserAlbums(parentListId: listId.uuidString)
+
+            print("✅ カスタムリストアルバム取得成功: \(albums.count)件, 子リスト: \(childLists.count)件, 子アルバム: \(childUserAlbums.count)件")
         } catch {
             print("❌ カスタムリストアルバム取得エラー: \(error)")
             errorMessage = error.localizedDescription

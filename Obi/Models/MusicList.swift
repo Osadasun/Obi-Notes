@@ -16,6 +16,7 @@ struct MusicList: Identifiable, Codable, Hashable {
     let type: ListType
     let defaultType: DefaultListType?
     let createdAt: Date
+    var parentListId: UUID?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -26,6 +27,7 @@ struct MusicList: Identifiable, Codable, Hashable {
         case type
         case defaultType = "default_type"
         case createdAt = "created_at"
+        case parentListId = "parent_list_id"
     }
 }
 

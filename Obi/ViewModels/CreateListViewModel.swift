@@ -46,7 +46,8 @@ class CreateListViewModel: ObservableObject {
                 isPublic: isPublic,
                 type: .custom,
                 defaultType: nil,
-                createdAt: Date()
+                createdAt: Date(),
+                parentListId: nil
             )
 
             _ = try await supabaseService.createList(newList)
