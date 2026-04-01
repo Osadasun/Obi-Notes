@@ -34,7 +34,8 @@ struct UserAlbumDetailView: View {
                     // カラー表示
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color(hex: album.colorHex))
-                        .frame(width: 200, height: 200)
+                        .frame(width: 250, height: 250)
+                        .shadow(radius: 10)
                         .overlay(
                             Image(systemName: "square.stack.3d.up")
                                 .font(.system(size: 60))
@@ -44,7 +45,7 @@ struct UserAlbumDetailView: View {
                     // タイトルとアーティスト名
                     VStack(alignment: .leading, spacing: 8) {
                         TextField("タイトルなし", text: $editedName)
-                            .font(.title)
+                            .font(.title2)
                             .fontWeight(.bold)
                             .multilineTextAlignment(.leading)
                             .focused($isNameFieldFocused)
@@ -65,7 +66,7 @@ struct UserAlbumDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 24)
                 }
-                .padding(.top, 32)
+                .padding(.vertical, 24)
 
                 // 子リスト/アルバムセクション（存在する場合のみ表示）
                 if !viewModel.childLists.isEmpty || !viewModel.childUserAlbums.isEmpty {
@@ -110,6 +111,25 @@ struct UserAlbumDetailView: View {
                         .padding(.horizontal, 24)
                     }
                 }
+
+                // 曲を追加ボタン
+                Button(action: {
+                    showingSearchSheet = true
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus")
+                            .font(.body)
+                        Text("曲を追加")
+                            .font(.body)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(12)
+                }
+                .padding(.horizontal, 24)
 
                 // 曲リスト
                 if viewModel.isLoading {

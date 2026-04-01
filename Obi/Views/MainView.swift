@@ -150,7 +150,7 @@ struct MainView: View {
                 let isObiRoot = obiPageManager.currentPage.id == "cardList"
                 let isObiListDetail: Bool = {
                     switch obiPageManager.currentPage {
-                    case .defaultList, .customList, .userAlbum:
+                    case .defaultList, .customList:
                         return true
                     default:
                         return false
