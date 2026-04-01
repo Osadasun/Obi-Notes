@@ -85,4 +85,11 @@ class ObiPageManager: ObservableObject {
             }
         }
     }
+
+    func updateCurrentPage(_ newPage: ObiPageContent) {
+        print("📱 Update current page: \(newPage.id)")
+        guard currentIndex >= 0 && currentIndex < pages.count else { return }
+        pages[currentIndex] = newPage
+        printPageStack()
+    }
 }

@@ -53,6 +53,11 @@ struct MainView: View {
     @State private var navigateToNewUserAlbum = false
     @State private var navigateToNewList = false
 
+    // カスタムリスト/ユーザーアルバムのタイトル編集用
+    @State private var isEditingTitle = false
+    @State private var editedTitle = ""
+    @FocusState private var isTitleFieldFocused: Bool
+
     // UIPageViewControllerの内部余白を計算
     private func calculateBottomPadding(safeAreaBottom: CGFloat) -> CGFloat {
         // ホームボタンありデバイス: safe area bottom = 0, padding = -50
@@ -96,8 +101,19 @@ struct MainView: View {
                     pagingScrollView
                 }
                 .ignoresSafeArea(edges: .bottom)
+                .onChange(of: obiPageManager.currentPage.id) { _, _ in
+                    // ページ遷移時に編集モードを解除
+                    if isEditingTitle {
+                        isEditingTitle = false
+                        isTitleFieldFocused = false
+                    }
+                }
                 .onTapGesture {
                     // コンテンツエリアタップでフォーカスを外す
+                    if isEditingTitle {
+                        isEditingTitle = false
+                        isTitleFieldFocused = false
+                    }
                     if isSearchFieldFocused {
                         isSearchFieldFocused = false
                     }
@@ -250,10 +266,54 @@ struct MainView: View {
                 // リスト詳細の場合のみタイトル表示
                 if selectedFeed == .obi {
                     switch obiPageManager.currentPage {
-                    case .defaultList, .customList:
-                        Text(obiPageManager.currentPage.title)
+                    case .defaultList(let category):
+                        Text(category.rawValue)
                             .font(.headline)
                             .foregroundColor(.primary)
+                    case .customList(let list):
+                        if isEditingTitle {
+                            TextField("タイトルなし", text: $editedTitle)
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                                .multilineTextAlignment(.center)
+                                .focused($isTitleFieldFocused)
+                                .onSubmit {
+                                    Task {
+                                        await updateListTitle(list: list)
+                                    }
+                                }
+                        } else {
+                            Text(list.name)
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                                .onTapGesture {
+                                    editedTitle = list.name
+                                    isEditingTitle = true
+                                    isTitleFieldFocused = true
+                                }
+                        }
+                    case .userAlbum(let album):
+                        if isEditingTitle {
+                            TextField("タイトルなし", text: $editedTitle)
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                                .multilineTextAlignment(.center)
+                                .focused($isTitleFieldFocused)
+                                .onSubmit {
+                                    Task {
+                                        await updateUserAlbumTitle(album: album)
+                                    }
+                                }
+                        } else {
+                            Text(album.name)
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                                .onTapGesture {
+                                    editedTitle = album.name
+                                    isEditingTitle = true
+                                    isTitleFieldFocused = true
+                                }
+                        }
                     default:
                         EmptyView()
                     }
@@ -261,10 +321,71 @@ struct MainView: View {
 
                 Spacer()
 
-                // 右側のスペース（メニューボタン用に確保）
-                Color.clear
-                    .frame(width: 44)
-                    .padding(.trailing, 24)
+                // 詳細ページの場合メニューボタン表示
+                if selectedFeed == .obi {
+                    switch obiPageManager.currentPage {
+                    case .defaultList, .customList, .userAlbum, .albumDetail, .trackDetail:
+                        Menu {
+                            Button(action: {
+                                // TODO: 編集機能
+                            }) {
+                                Label("編集", systemImage: "pencil")
+                            }
+
+                            // カスタム系のみ削除オプションを表示
+                            switch obiPageManager.currentPage {
+                            case .customList, .userAlbum:
+                                Divider()
+
+                                Button(role: .destructive, action: {
+                                    // TODO: 削除機能
+                                }) {
+                                    Label("削除", systemImage: "trash")
+                                }
+                            default:
+                                EmptyView()
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.title2)
+                                .foregroundColor(.primary)
+                                .frame(width: 44, height: 44)
+                        }
+                        .padding(.trailing, 24)
+                    default:
+                        // 右側のスペース（一貫性のため確保）
+                        Color.clear
+                            .frame(width: 44)
+                            .padding(.trailing, 24)
+                    }
+                } else if selectedFeed == .explore {
+                    switch explorePageManager.currentPage {
+                    case .albumDetail, .trackDetail, .reviewDetail:
+                        Menu {
+                            Button(action: {
+                                // TODO: 編集機能
+                            }) {
+                                Label("編集", systemImage: "pencil")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.title2)
+                                .foregroundColor(.primary)
+                                .frame(width: 44, height: 44)
+                        }
+                        .padding(.trailing, 24)
+                    default:
+                        // 右側のスペース（一貫性のため確保）
+                        Color.clear
+                            .frame(width: 44)
+                            .padding(.trailing, 24)
+                    }
+                } else {
+                    // 右側のスペース（一貫性のため確保）
+                    Color.clear
+                        .frame(width: 44)
+                        .padding(.trailing, 24)
+                }
             }
         }
         .frame(height: 44)
@@ -591,6 +712,98 @@ struct MainView: View {
     }
 
     // MARK: - Helper Methods
+
+    /// カスタムリストのタイトルを更新
+    private func updateListTitle(list: MusicList) async {
+        let trimmedTitle = editedTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalTitle = trimmedTitle.isEmpty ? "タイトルなし" : trimmedTitle
+
+        guard finalTitle != list.name else {
+            isEditingTitle = false
+            isTitleFieldFocused = false
+            return
+        }
+
+        do {
+            try await SupabaseService.shared.updateList(
+                listId: list.id,
+                name: finalTitle,
+                description: nil,
+                isPublic: nil
+            )
+            print("✅ [MainView] List title updated: \(finalTitle)")
+
+            // ページマネージャーのページを更新
+            if case .customList(var updatedList) = obiPageManager.currentPage {
+                updatedList = MusicList(
+                    id: updatedList.id,
+                    userId: updatedList.userId,
+                    name: finalTitle,
+                    description: updatedList.description,
+                    isPublic: updatedList.isPublic,
+                    type: updatedList.type,
+                    defaultType: updatedList.defaultType,
+                    createdAt: updatedList.createdAt
+                )
+                obiPageManager.updateCurrentPage(.customList(updatedList))
+            }
+
+            isEditingTitle = false
+            isTitleFieldFocused = false
+
+            // リストビューを再読み込み
+            await obiListViewModel.loadListCounts()
+        } catch {
+            print("❌ [MainView] Failed to update list title: \(error)")
+            isEditingTitle = false
+            isTitleFieldFocused = false
+        }
+    }
+
+    /// ユーザーアルバムのタイトルを更新
+    private func updateUserAlbumTitle(album: UserAlbum) async {
+        let trimmedTitle = editedTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalTitle = trimmedTitle.isEmpty ? "タイトルなし" : trimmedTitle
+
+        guard finalTitle != album.name else {
+            isEditingTitle = false
+            isTitleFieldFocused = false
+            return
+        }
+
+        do {
+            try await SupabaseService.shared.updateUserAlbum(
+                albumId: album.id,
+                name: finalTitle,
+                colorHex: nil
+            )
+            print("✅ [MainView] User album title updated: \(finalTitle)")
+
+            // ページマネージャーのページを更新
+            if case .userAlbum(var updatedAlbum) = obiPageManager.currentPage {
+                updatedAlbum = UserAlbum(
+                    id: updatedAlbum.id,
+                    userId: updatedAlbum.userId,
+                    name: finalTitle,
+                    artistName: updatedAlbum.artistName,
+                    colorHex: updatedAlbum.colorHex,
+                    createdAt: updatedAlbum.createdAt,
+                    updatedAt: Date()
+                )
+                obiPageManager.updateCurrentPage(.userAlbum(updatedAlbum))
+            }
+
+            isEditingTitle = false
+            isTitleFieldFocused = false
+
+            // リストビューを再読み込み
+            await obiListViewModel.loadListCounts()
+        } catch {
+            print("❌ [MainView] Failed to update user album title: \(error)")
+            isEditingTitle = false
+            isTitleFieldFocused = false
+        }
+    }
 
     /// 新しいリストを「タイトルなし」で即座に作成
     private func createNewList() async {
