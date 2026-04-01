@@ -165,6 +165,38 @@ class SupabaseService {
         return reviewsWithUsers
     }
 
+    func fetchReviewsForTarget(targetId: String) async throws -> [ReviewWithUser] {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        do {
+            // targetIdでフィルタしたレビューのみを取得
+            let reviews: [Review] = try await client.database
+                .from("reviews")
+                .select()
+                .eq("target_id", value: targetId)
+                .eq("is_public", value: true)
+                .order("created_at", ascending: false)
+                .execute()
+                .value
+
+            // ユーザー情報を取得
+            var reviewsWithUsers: [ReviewWithUser] = []
+            for review in reviews {
+                if let user = try? await fetchUser(id: review.userId) {
+                    reviewsWithUsers.append(ReviewWithUser(review: review, user: user))
+                }
+            }
+
+            print("✅ [SupabaseService] targetId=\(targetId)のレビュー取得成功: \(reviewsWithUsers.count)件")
+            return reviewsWithUsers
+        } catch {
+            print("❌ [SupabaseService] targetId=\(targetId)のレビュー取得エラー: \(error)")
+            throw error
+        }
+    }
+
     func fetchMyReviews(userId: UUID, limit: Int = 50) async throws -> [Review] {
         guard let client = client else {
             throw SupabaseError.notConfigured

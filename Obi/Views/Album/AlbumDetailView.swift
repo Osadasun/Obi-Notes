@@ -37,7 +37,11 @@ struct AlbumDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showingReviewSheet) {
+        .sheet(isPresented: $showingReviewSheet, onDismiss: {
+            Task {
+                await viewModel.loadReviews()
+            }
+        }) {
             NavigationStack {
                 WriteReviewView(musicItem: MusicItem(
                     id: viewModel.album.id,
@@ -134,7 +138,7 @@ struct AlbumDetailView: View {
                 Button(action: {
                     showingReviewSheet = true
                 }) {
-                    Image(systemName: "square.and.pencil")
+                    Image(systemName: viewModel.hasUserReviewed ? "pencil.and.list.clipboard" : "square.and.pencil")
                         .font(.title3)
                         .foregroundColor(.white)
                         .frame(width: 44, height: 44)

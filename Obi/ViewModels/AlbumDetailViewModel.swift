@@ -17,6 +17,7 @@ class AlbumDetailViewModel: ObservableObject {
     @Published var isLoadingReviews = false
     @Published var errorMessage: String?
     @Published var isInAnyList = false
+    @Published var hasUserReviewed = false
 
     private let musicService = AppleMusicService.shared
     private let supabaseService = SupabaseService.shared
@@ -86,11 +87,15 @@ class AlbumDetailViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            // Supabaseからこのアルバムのレビューを取得
-            // 注: 現在のSupabaseServiceにはアルバムIDでフィルタする機能がないため、
-            // 全レビューを取得してフィルタ（後で最適化）
-            let allReviews = try await supabaseService.fetchReviewsWithUsers()
-            reviews = allReviews.filter { $0.review.targetId == album.id }
+            // このアルバムのレビューのみを取得（最適化済み）
+            reviews = try await supabaseService.fetchReviewsForTarget(targetId: album.id)
+
+            // ユーザーがレビュー済みかチェック
+            if let userId = UserManager.shared.currentUserId {
+                hasUserReviewed = reviews.contains { $0.review.userId == userId }
+            } else {
+                hasUserReviewed = false
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

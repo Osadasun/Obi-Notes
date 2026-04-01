@@ -17,40 +17,24 @@ struct TrackDetailView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            ScrollView {
-                VStack(spacing: 0) {
-                    // アルバムアート & 基本情報
-                    trackHeader
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                // アルバムアート & 基本情報
+                trackHeader
 
-                    // 評価表示
-                    ratingSection
+                // 評価表示
+                ratingSection
 
-                    // レビュー一覧
-                    reviewsSection
-                }
+                // レビュー一覧
+                reviewsSection
             }
-
-            // フローティングアクションボタン
-            Button(action: {
-                showingReviewSheet = true
-            }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 56, height: 56)
-                        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
-
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(.purple)
-                }
-            }
-            .padding(.trailing, 20)
-            .padding(.bottom, 20)
         }
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showingReviewSheet) {
+        .sheet(isPresented: $showingReviewSheet, onDismiss: {
+            Task {
+                await viewModel.loadReviews()
+            }
+        }) {
             NavigationStack {
                 WriteReviewView(musicItem: MusicItem(
                     id: viewModel.track.id,
@@ -61,7 +45,11 @@ struct TrackDetailView: View {
                 ))
             }
         }
-        .sheet(isPresented: $showingAddToListSheet) {
+        .sheet(isPresented: $showingAddToListSheet, onDismiss: {
+            Task {
+                await viewModel.checkIfInAnyList()
+            }
+        }) {
             AddToListView(track: viewModel.track)
         }
         .task {
@@ -88,14 +76,13 @@ struct TrackDetailView: View {
                     .font(.title3)
                     .foregroundColor(.secondary)
 
-                if let albumTitle = viewModel.track.albumTitle {
-                    Text(albumTitle)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
+                // その他の情報（アルバム・時間を・で区切る）
+                let otherInfo = [viewModel.track.albumTitle, viewModel.track.durationFormatted]
+                    .compactMap { $0 }
+                    .joined(separator: " • ")
 
-                if let duration = viewModel.track.durationFormatted {
-                    Text(duration)
+                if !otherInfo.isEmpty {
+                    Text(otherInfo)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -111,27 +98,42 @@ struct TrackDetailView: View {
     private var ratingSection: some View {
         HStack {
             // 評価表示
-            HStack(spacing: 4) {
+            HStack(spacing: 6) {
                 Image(systemName: "star.fill")
-                    .font(.body)
+                    .font(.title3)
                     .foregroundColor(.yellow)
                 Text(String(format: "%.1f", viewModel.averageRating ?? 0.0))
-                    .font(.body)
+                    .font(.title3)
                     .fontWeight(.semibold)
             }
 
             Spacer()
 
-            // +ボタン（リストに追加）
-            Button(action: {
-                showingAddToListSheet = true
-            }) {
-                Image(systemName: "plus")
-                    .font(.body)
-                    .foregroundColor(.purple)
-                    .frame(width: 32, height: 32)
-                    .background(Color.purple.opacity(0.1))
-                    .clipShape(Circle())
+            // ボタン群
+            HStack(spacing: 12) {
+                // レビューボタン
+                Button(action: {
+                    showingReviewSheet = true
+                }) {
+                    Image(systemName: viewModel.hasUserReviewed ? "pencil.and.list.clipboard" : "square.and.pencil")
+                        .font(.title3)
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.black)
+                        .clipShape(Circle())
+                }
+
+                // +ボタン（リストに追加）
+                Button(action: {
+                    showingAddToListSheet = true
+                }) {
+                    Image(systemName: viewModel.isInAnyList ? "checkmark" : "plus")
+                        .font(.title3)
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.black)
+                        .clipShape(Circle())
+                }
             }
         }
         .padding(.horizontal, 24)
