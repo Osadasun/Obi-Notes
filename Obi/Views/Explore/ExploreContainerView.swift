@@ -48,8 +48,13 @@ struct ExploreContainerView: View, Equatable {
             )
 
         case .albumDetail(let album):
-            AlbumDetailView(album: album)
-                .navigationBarHidden(true)
+            AlbumDetailView(
+                album: album,
+                onNavigateToTrack: { track in
+                    pageManager.navigateTo(.trackDetail(track))
+                }
+            )
+            .navigationBarHidden(true)
 
         case .trackDetail(let track):
             TrackDetailView(track: track)

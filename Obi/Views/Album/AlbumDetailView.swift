@@ -11,9 +11,11 @@ struct AlbumDetailView: View {
     @StateObject private var viewModel: AlbumDetailViewModel
     @State private var showingReviewSheet = false
     @State private var showingAddToListSheet = false
+    var onNavigateToTrack: ((Track) -> Void)? = nil
 
-    init(album: Album) {
+    init(album: Album, onNavigateToTrack: ((Track) -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: AlbumDetailViewModel(album: album))
+        self.onNavigateToTrack = onNavigateToTrack
     }
 
     var body: some View {
@@ -162,7 +164,9 @@ struct AlbumDetailView: View {
     private var trackListSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(viewModel.tracks) { track in
-                NavigationLink(destination: TrackDetailView(track: track)) {
+                Button(action: {
+                    onNavigateToTrack?(track)
+                }) {
                     HStack(spacing: 12) {
                         // トラック番号
                         if let trackNumber = track.trackNumber {

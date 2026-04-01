@@ -91,8 +91,13 @@ struct ObiContainerView: View, Equatable {
             .navigationBarHidden(true)
 
         case .albumDetail(let album):
-            AlbumDetailView(album: album)
-                .navigationBarHidden(true)
+            AlbumDetailView(
+                album: album,
+                onNavigateToTrack: { track in
+                    pageManager.navigateTo(.trackDetail(track))
+                }
+            )
+            .navigationBarHidden(true)
 
         case .trackDetail(let track):
             TrackDetailView(track: track)
