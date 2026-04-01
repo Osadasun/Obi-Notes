@@ -263,7 +263,7 @@ struct MainView: View {
 
                 Spacer()
 
-                // リスト詳細の場合のみタイトル表示
+                // リスト詳細の場合のみタイトル表示（userAlbum/albumDetail/trackDetailは各View内で表示）
                 if selectedFeed == .obi {
                     switch obiPageManager.currentPage {
                     case .defaultList(let category):
@@ -288,28 +288,6 @@ struct MainView: View {
                                 .foregroundColor(.primary)
                                 .onTapGesture {
                                     editedTitle = list.name
-                                    isEditingTitle = true
-                                    isTitleFieldFocused = true
-                                }
-                        }
-                    case .userAlbum(let album):
-                        if isEditingTitle {
-                            TextField("タイトルなし", text: $editedTitle)
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                                .multilineTextAlignment(.center)
-                                .focused($isTitleFieldFocused)
-                                .onSubmit {
-                                    Task {
-                                        await updateUserAlbumTitle(album: album)
-                                    }
-                                }
-                        } else {
-                            Text(album.name)
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                                .onTapGesture {
-                                    editedTitle = album.name
                                     isEditingTitle = true
                                     isTitleFieldFocused = true
                                 }

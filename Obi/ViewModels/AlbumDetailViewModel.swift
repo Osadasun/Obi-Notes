@@ -16,6 +16,7 @@ class AlbumDetailViewModel: ObservableObject {
     @Published var isLoadingTracks = false
     @Published var isLoadingReviews = false
     @Published var errorMessage: String?
+    @Published var isInAnyList = false
 
     private let musicService = AppleMusicService.shared
     private let supabaseService = SupabaseService.shared
@@ -29,6 +30,35 @@ class AlbumDetailViewModel: ObservableObject {
     func loadData() async {
         await loadTracks()
         await loadReviews()
+        await checkIfInAnyList()
+    }
+
+    func checkIfInAnyList() async {
+        guard let userId = UserManager.shared.currentUserId else {
+            isInAnyList = false
+            return
+        }
+
+        do {
+            // ユーザーのすべてのリストを取得
+            let lists = try await supabaseService.fetchUserLists(userId: userId)
+
+            // 各リストのアイテムをチェック
+            for list in lists {
+                let items = try await supabaseService.fetchListItems(listId: list.id)
+                if items.contains(where: { $0.targetId == album.id }) {
+                    isInAnyList = true
+                    print("✅ [AlbumDetail] アルバム \(album.title) はリスト \(list.name) に追加済み")
+                    return
+                }
+            }
+
+            isInAnyList = false
+            print("ℹ️ [AlbumDetail] アルバム \(album.title) はどのリストにも未追加")
+        } catch {
+            print("❌ [AlbumDetail] リスト確認エラー: \(error)")
+            isInAnyList = false
+        }
     }
 
     func loadTracks() async {

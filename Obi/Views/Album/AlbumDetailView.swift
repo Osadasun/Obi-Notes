@@ -17,42 +17,22 @@ struct AlbumDetailView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            ScrollView {
-                VStack(spacing: 0) {
-                    // アルバムアート & 基本情報
-                    albumHeader
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                // アルバムアート & 基本情報
+                albumHeader
 
-                    // 評価表示
-                    ratingSection
+                // 評価表示
+                ratingSection
 
-                    // トラックリスト
-                    if !viewModel.tracks.isEmpty {
-                        trackListSection
-                    }
-
-                    // レビュー一覧
-                    reviewsSection
+                // トラックリスト
+                if !viewModel.tracks.isEmpty {
+                    trackListSection
                 }
-            }
 
-            // フローティングアクションボタン
-            Button(action: {
-                showingReviewSheet = true
-            }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 56, height: 56)
-                        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
-
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(.purple)
-                }
+                // レビュー一覧
+                reviewsSection
             }
-            .padding(.trailing, 20)
-            .padding(.bottom, 20)
         }
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingReviewSheet) {
@@ -66,7 +46,11 @@ struct AlbumDetailView: View {
                 ))
             }
         }
-        .sheet(isPresented: $showingAddToListSheet) {
+        .sheet(isPresented: $showingAddToListSheet, onDismiss: {
+            Task {
+                await viewModel.checkIfInAnyList()
+            }
+        }) {
             AddToListView(album: viewModel.album)
         }
         .task {
@@ -131,27 +115,42 @@ struct AlbumDetailView: View {
     private var ratingSection: some View {
         HStack {
             // 評価表示
-            HStack(spacing: 4) {
+            HStack(spacing: 6) {
                 Image(systemName: "star.fill")
-                    .font(.body)
+                    .font(.title3)
                     .foregroundColor(.yellow)
                 Text(String(format: "%.1f", viewModel.averageRating ?? 0.0))
-                    .font(.body)
+                    .font(.title3)
                     .fontWeight(.semibold)
             }
 
             Spacer()
 
-            // +ボタン（リストに追加）
-            Button(action: {
-                showingAddToListSheet = true
-            }) {
-                Image(systemName: "plus")
-                    .font(.body)
-                    .foregroundColor(.purple)
-                    .frame(width: 32, height: 32)
-                    .background(Color.purple.opacity(0.1))
-                    .clipShape(Circle())
+            // ボタン群
+            HStack(spacing: 12) {
+                // レビューボタン
+                Button(action: {
+                    showingReviewSheet = true
+                }) {
+                    Image(systemName: "square.and.pencil")
+                        .font(.title3)
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.black)
+                        .clipShape(Circle())
+                }
+
+                // +ボタン（リストに追加）
+                Button(action: {
+                    showingAddToListSheet = true
+                }) {
+                    Image(systemName: viewModel.isInAnyList ? "checkmark" : "plus")
+                        .font(.title3)
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.black)
+                        .clipShape(Circle())
+                }
             }
         }
         .padding(.horizontal, 24)
@@ -161,20 +160,49 @@ struct AlbumDetailView: View {
     // MARK: - Track List Section
 
     private var trackListSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("トラックリスト")
-                .font(.headline)
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-
+        VStack(alignment: .leading, spacing: 0) {
             ForEach(viewModel.tracks) { track in
                 NavigationLink(destination: TrackDetailView(track: track)) {
-                    TrackRow(track: track)
-                        .padding(.horizontal, 24)
+                    HStack(spacing: 12) {
+                        // トラック番号
+                        if let trackNumber = track.trackNumber {
+                            Text("\(trackNumber)")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(track.title)
+                                .font(.body)
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+
+                            if let duration = track.durationFormatted {
+                                Text(duration)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
+                        Spacer()
+
+                        // 評価表示
+                        HStack(spacing: 4) {
+                            Image(systemName: "star.fill")
+                                .font(.caption)
+                                .foregroundColor(.yellow)
+                            Text("0.0")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 8)
                 }
                 .buttonStyle(.plain)
             }
         }
+        .padding(.horizontal, 24)
+        .padding(.top, 16)
         .padding(.bottom, 16)
     }
 
