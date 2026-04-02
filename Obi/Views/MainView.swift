@@ -119,9 +119,10 @@ struct MainView: View {
                     }
                 }
 
-                // 背景オーバーレイ（メニュー表示時）
+                // 透明オーバーレイ（メニュー表示時、タップで閉じる）
                 if showMenu {
-                    Color.black.opacity(0.4)
+                    Color.clear
+                        .contentShape(Rectangle())
                         .ignoresSafeArea()
                         .onTapGesture {
                             withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
@@ -487,71 +488,81 @@ struct MainView: View {
                 ZStack {
                     // メニューコンテンツ（Obiタブでメニュー表示時）
                     if showMenu && selectedFeed == .obi {
-                        VStack(spacing: 0) {
-                            // レビューボタン
-                            Button(action: {
-                                showMenu = false
-                                showCreateReview = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "star.bubble")
-                                        .font(.title3)
-                                    Text("レビュー")
-                                        .font(.headline)
-                                    Spacer()
+                        VStack(spacing: 12) {
+                            // レビュー島
+                            VStack(spacing: 0) {
+                                // レビューボタン
+                                Button(action: {
+                                    showMenu = false
+                                    showCreateReview = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "star.bubble")
+                                            .font(.title3)
+                                        Text("レビュー")
+                                            .font(.headline)
+                                        Spacer()
+                                    }
+                                    .foregroundColor(.white)
+                                    .padding(.vertical, 12)
+                                    .padding(.horizontal, 24)
                                 }
-                                .foregroundColor(.white)
-                                .padding(.vertical, 20)
-                                .padding(.horizontal, 24)
+                                .buttonStyle(ScaleButtonStyle())
                             }
-                            .buttonStyle(ScaleButtonStyle())
+                            .cornerRadius(16)
 
-                            Divider()
-                                .background(Color.white.opacity(0.2))
+                            // ボーダー（島の間の区切り）
+                            Rectangle()
+                                .fill(Color.white.opacity(0.2))
+                                .frame(height: 1)
 
-                            // リストボタン
-                            Button(action: {
-                                showMenu = false
-                                Task {
-                                    await createNewList()
+                            // リスト/アルバム島
+                            VStack(spacing: 0) {
+                                // リストボタン
+                                Button(action: {
+                                    showMenu = false
+                                    Task {
+                                        await createNewList()
+                                    }
+                                }) {
+                                    HStack {
+                                        Image(systemName: "list.bullet.rectangle")
+                                            .font(.title3)
+                                        Text("リスト")
+                                            .font(.headline)
+                                        Spacer()
+                                    }
+                                    .foregroundColor(.white)
+                                    .padding(.vertical, 12)
+                                    .padding(.horizontal, 24)
                                 }
-                            }) {
-                                HStack {
-                                    Image(systemName: "list.bullet.rectangle")
-                                        .font(.title3)
-                                    Text("リスト")
-                                        .font(.headline)
-                                    Spacer()
+                                .buttonStyle(ScaleButtonStyle())
+
+                                // アルバムボタン
+                                Button(action: {
+                                    showMenu = false
+                                    Task {
+                                        await createNewAlbum()
+                                    }
+                                }) {
+                                    HStack {
+                                        Image(systemName: "square.stack.3d.up")
+                                            .font(.title3)
+                                        Text("アルバム")
+                                            .font(.headline)
+                                        Spacer()
+                                    }
+                                    .foregroundColor(.white)
+                                    .padding(.vertical, 12)
+                                    .padding(.horizontal, 24)
                                 }
-                                .foregroundColor(.white)
-                                .padding(.vertical, 20)
-                                .padding(.horizontal, 24)
+                                .buttonStyle(ScaleButtonStyle())
                             }
-                            .buttonStyle(ScaleButtonStyle())
-
-                            Divider()
-                                .background(Color.white.opacity(0.2))
-
-                            // アルバムボタン
-                            Button(action: {
-                                showMenu = false
-                                Task {
-                                    await createNewAlbum()
-                                }
-                            }) {
-                                HStack {
-                                    Image(systemName: "square.stack.3d.up")
-                                        .font(.title3)
-                                    Text("アルバム")
-                                        .font(.headline)
-                                    Spacer()
-                                }
-                                .foregroundColor(.white)
-                                .padding(.vertical, 20)
-                                .padding(.horizontal, 24)
-                            }
-                            .buttonStyle(ScaleButtonStyle())
+                        
+                            .cornerRadius(16)
                         }
+                         .padding(.vertical, 12)
+                        .background(Color.black)
                         .transition(.opacity)
                     }
 
@@ -561,8 +572,13 @@ struct MainView: View {
                             if isSearchFieldFocused {
                                 // フォーカス中: キャンセル（フォーカスを外す）
                                 isSearchFieldFocused = false
+                            } else if selectedFeed == .explore {
+                                // Exploreビューの時: Obiビューにスクロール
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    scrollPosition = 0
+                                }
                             } else {
-                                // フォーカスなし: メニューを開く
+                                // Obiビューの時: メニューを開く
                                 withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
                                     showMenu = true
                                 }
