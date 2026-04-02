@@ -23,16 +23,21 @@ class ObiPageManager: ObservableObject {
     }
 
     func navigateTo(_ page: ObiPageContent) {
-        print("📱 Navigate to: \(page.id)")
+        print("📱 [ObiPageManager] navigateTo called")
+        print("📱 [ObiPageManager]   Target page: \(page.id)")
+        print("📱 [ObiPageManager]   Current state BEFORE: index=\(currentIndex), pages.count=\(pages.count)")
 
         // 現在のインデックスより後ろにページがある場合は削除（履歴をクリーン）
         if currentIndex < pages.count - 1 {
-            print("📱 Cleaning up forward history: removing \(pages.count - currentIndex - 1) pages")
+            let pagesToRemove = pages.count - currentIndex - 1
+            print("📱 [ObiPageManager]   Cleaning forward history: removing \(pagesToRemove) pages")
             pages.removeSubrange((currentIndex + 1)..<pages.count)
+            print("📱 [ObiPageManager]   After cleanup: pages.count=\(pages.count)")
         }
 
         pages.append(page)
         currentIndex = pages.count - 1
+        print("📱 [ObiPageManager]   Current state AFTER: index=\(currentIndex), pages.count=\(pages.count)")
         printPageStack()
     }
 
@@ -45,51 +50,90 @@ class ObiPageManager: ObservableObject {
     }
 
     func goBack() {
-        print("📱 Go back: index \(currentIndex) → \(currentIndex - 1)")
-        guard pages.count > 1, currentIndex > 0 else { return }
+        print("📱 [ObiPageManager] goBack called")
+        print("📱 [ObiPageManager]   Current state: index=\(currentIndex), pages.count=\(pages.count)")
+
+        guard pages.count > 1, currentIndex > 0 else {
+            print("📱 [ObiPageManager]   ⚠️ Cannot go back: at root or invalid state")
+            return
+        }
 
         printPageStack()
 
         // インデックスだけ変更して、ページ削除は遅延実行
         let targetIndex = currentIndex - 1
+        print("📱 [ObiPageManager]   Setting index: \(currentIndex) → \(targetIndex)")
         currentIndex = targetIndex
 
         // アニメーション完了後にページを削除
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
-            guard let self = self else { return }
+            guard let self = self else {
+                print("📱 [ObiPageManager]   ⚠️ Self deallocated during goBack cleanup")
+                return
+            }
+            print("📱 [ObiPageManager]   Cleanup timer fired: index=\(self.currentIndex), pages.count=\(self.pages.count)")
             if self.pages.count > self.currentIndex + 1 {
-                print("📱 Remove page at index \(self.pages.count - 1)")
+                let pageToRemove = self.pages.last?.id ?? "unknown"
+                print("📱 [ObiPageManager]   Removing page: \(pageToRemove) at index \(self.pages.count - 1)")
                 self.pages.removeLast()
+                print("📱 [ObiPageManager]   After removal: pages.count=\(self.pages.count)")
                 self.printPageStack()
+            } else {
+                print("📱 [ObiPageManager]   ⚠️ No page to remove (pages.count=\(self.pages.count), currentIndex=\(self.currentIndex))")
             }
         }
     }
 
     func handlePageChange(to index: Int) {
-        print("📱 Page changed to: \(index)")
+        print("📱 [ObiPageManager] handlePageChange called")
+        print("📱 [ObiPageManager]   Target index: \(index)")
+        print("📱 [ObiPageManager]   Current state BEFORE: index=\(currentIndex), pages.count=\(pages.count)")
         printPageStack()
 
         // ユーザーがスワイプで戻った場合
         if index < currentIndex && pages.count > index + 1 {
+            print("📱 [ObiPageManager]   ✅ Swipe back detected: \(currentIndex) → \(index)")
             // インデックスを更新
             currentIndex = index
+            print("📱 [ObiPageManager]   Index updated to: \(currentIndex)")
 
             // 後ろのページを削除
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
-                guard let self = self else { return }
-                while self.pages.count > self.currentIndex + 1 {
-                    print("📱 Remove trailing page")
-                    self.pages.removeLast()
+                guard let self = self else {
+                    print("📱 [ObiPageManager]   ⚠️ Self deallocated during handlePageChange cleanup")
+                    return
                 }
+                print("📱 [ObiPageManager]   Cleanup timer fired: index=\(self.currentIndex), pages.count=\(self.pages.count)")
+                var removedCount = 0
+                while self.pages.count > self.currentIndex + 1 {
+                    let pageToRemove = self.pages.last?.id ?? "unknown"
+                    print("📱 [ObiPageManager]   Removing trailing page: \(pageToRemove)")
+                    self.pages.removeLast()
+                    removedCount += 1
+                }
+                print("📱 [ObiPageManager]   Removed \(removedCount) trailing pages, final count: \(self.pages.count)")
                 self.printPageStack()
             }
+        } else if index == currentIndex {
+            print("📱 [ObiPageManager]   ℹ️ Same index, no action needed")
+        } else {
+            print("📱 [ObiPageManager]   ⚠️ Unexpected state: index=\(index), currentIndex=\(currentIndex), pages.count=\(pages.count)")
         }
     }
 
     func updateCurrentPage(_ newPage: ObiPageContent) {
-        print("📱 Update current page: \(newPage.id)")
-        guard currentIndex >= 0 && currentIndex < pages.count else { return }
+        print("📱 [ObiPageManager] updateCurrentPage called")
+        print("📱 [ObiPageManager]   New page: \(newPage.id)")
+        print("📱 [ObiPageManager]   Current state: index=\(currentIndex), pages.count=\(pages.count)")
+
+        guard currentIndex >= 0 && currentIndex < pages.count else {
+            print("📱 [ObiPageManager]   ⚠️ Invalid index, cannot update page")
+            return
+        }
+
+        let oldPage = pages[currentIndex].id
         pages[currentIndex] = newPage
+        print("📱 [ObiPageManager]   Updated page at index \(currentIndex): \(oldPage) → \(newPage.id)")
         printPageStack()
     }
 }

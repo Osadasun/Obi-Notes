@@ -19,7 +19,10 @@ struct PageViewController<Page: View>: UIViewControllerRepresentable {
     }
 
     func makeUIViewController(context: Context) -> UIPageViewController {
-        print("📄 PageViewController makeUIViewController - creating with \(pages.count) pages, currentIndex: \(currentIndex)")
+        print("📄 [PageViewController] makeUIViewController called")
+        print("📄 [PageViewController]   Pages count: \(pages.count)")
+        print("📄 [PageViewController]   Current index: \(currentIndex)")
+        print("📄 [PageViewController]   Page IDs: \(pageIds)")
 
         let pageViewController = UIPageViewController(
             transitionStyle: .scroll,
@@ -36,7 +39,9 @@ struct PageViewController<Page: View>: UIViewControllerRepresentable {
                 animated: false,
                 completion: nil
             )
-            print("📄 Set initial viewController at index \(currentIndex)")
+            print("📄 [PageViewController]   ✅ Set initial viewController at index \(currentIndex)")
+        } else {
+            print("📄 [PageViewController]   ⚠️ Cannot set initial viewController: empty controllers or invalid index")
         }
 
         // CoordinatorにUIPageViewControllerの参照を保存
@@ -51,28 +56,38 @@ struct PageViewController<Page: View>: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ pageViewController: UIPageViewController, context: Context) {
+        print("📄 [PageViewController] updateUIViewController called")
+        print("📄 [PageViewController]   Current index binding: \(currentIndex)")
+        print("📄 [PageViewController]   Coordinator current index: \(context.coordinator.currentIndex ?? -1)")
+        print("📄 [PageViewController]   Pages count: \(pages.count)")
+
         // ページ数またはページIDが変わった場合、コントローラー配列を更新
         let countChanged = context.coordinator.controllers.count != pages.count
         let idsChanged = context.coordinator.pageIds != pageIds
 
         if countChanged || idsChanged {
             if countChanged {
-                print("📄 PageViewController update: controllers count changed \(context.coordinator.controllers.count) → \(pages.count)")
+                print("📄 [PageViewController]   🔄 Controllers count changed: \(context.coordinator.controllers.count) → \(pages.count)")
             }
             if idsChanged {
-                print("📄 PageViewController update: page IDs changed")
-                print("  Old IDs: \(context.coordinator.pageIds)")
-                print("  New IDs: \(pageIds)")
+                print("📄 [PageViewController]   🔄 Page IDs changed")
+                print("📄 [PageViewController]     Old IDs: \(context.coordinator.pageIds)")
+                print("📄 [PageViewController]     New IDs: \(pageIds)")
             }
             context.coordinator.controllers = pages.map { UIHostingController(rootView: $0) }
             context.coordinator.pageIds = pageIds
+            print("📄 [PageViewController]   ✅ Updated controllers array")
         }
 
         // 現在のインデックスが範囲内かチェック
-        guard currentIndex >= 0 && currentIndex < pages.count else { return }
+        guard currentIndex >= 0 && currentIndex < pages.count else {
+            print("📄 [PageViewController]   ⚠️ Index out of range: \(currentIndex) (pages.count: \(pages.count))")
+            return
+        }
 
         // インデックスが変わった場合のみページを切り替え
         guard context.coordinator.currentIndex != currentIndex else {
+            print("📄 [PageViewController]   ℹ️ Index unchanged, no navigation needed")
             return
         }
 
@@ -81,7 +96,9 @@ struct PageViewController<Page: View>: UIViewControllerRepresentable {
         let direction: UIPageViewController.NavigationDirection =
             currentIndex > (context.coordinator.currentIndex ?? 0) ? .forward : .reverse
 
-        print("📄 PageViewController update: index \(context.coordinator.currentIndex ?? -1) → \(currentIndex), animated: \(shouldAnimate)")
+        print("📄 [PageViewController]   📍 Navigating: \(context.coordinator.currentIndex ?? -1) → \(currentIndex)")
+        print("📄 [PageViewController]     Direction: \(direction == .forward ? "forward" : "reverse")")
+        print("📄 [PageViewController]     Animated: \(shouldAnimate)")
 
         pageViewController.setViewControllers(
             [context.coordinator.controllers[currentIndex]],
@@ -91,6 +108,7 @@ struct PageViewController<Page: View>: UIViewControllerRepresentable {
         )
 
         context.coordinator.currentIndex = currentIndex
+        print("📄 [PageViewController]   ✅ setViewControllers completed")
 
         // 最初のページにいる場合はスクロールを無効化（外側のScrollViewがジェスチャーを処理できるように）
         context.coordinator.updateScrollEnabled()
@@ -112,11 +130,13 @@ struct PageViewController<Page: View>: UIViewControllerRepresentable {
 
         func updateScrollEnabled() {
             guard let pageViewController = pageViewController else {
-                print("📄 updateScrollEnabled: pageViewController is nil")
+                print("📄 [Coordinator] updateScrollEnabled: pageViewController is nil")
                 return
             }
 
-            print("📄 updateScrollEnabled called - currentIndex: \(currentIndex ?? -1), pages.count: \(controllers.count)")
+            print("📄 [Coordinator] updateScrollEnabled called")
+            print("📄 [Coordinator]   Current index: \(currentIndex ?? -1)")
+            print("📄 [Coordinator]   Controllers count: \(controllers.count)")
 
             // UIPageViewControllerの内部ScrollViewを取得
             var foundScrollView = false
@@ -131,15 +151,15 @@ struct PageViewController<Page: View>: UIViewControllerRepresentable {
 
                     if oldValue != newValue {
                         scrollView.isScrollEnabled = newValue
-                        print("📄 ✅ Changed scroll enabled: \(oldValue) → \(newValue) (index: \(currentIndex ?? -1))")
+                        print("📄 [Coordinator]   ✅ Changed scroll enabled: \(oldValue) → \(newValue) (reason: \(shouldDisableScroll ? "at index 0, disable for outer ScrollView" : "not at index 0, enable for paging"))")
                     } else {
-                        print("📄 ℹ️ Scroll enabled unchanged: \(newValue) (index: \(currentIndex ?? -1))")
+                        print("📄 [Coordinator]   ℹ️ Scroll enabled unchanged: \(newValue) (at index \(currentIndex ?? -1))")
                     }
                 }
             }
 
             if !foundScrollView {
-                print("📄 ⚠️ No UIScrollView found in UIPageViewController.view.subviews")
+                print("📄 [Coordinator]   ⚠️ No UIScrollView found in UIPageViewController.view.subviews")
             }
         }
 
@@ -168,16 +188,24 @@ struct PageViewController<Page: View>: UIViewControllerRepresentable {
             previousViewControllers: [UIViewController],
             transitionCompleted completed: Bool
         ) {
+            print("📄 [Coordinator] didFinishAnimating called")
+            print("📄 [Coordinator]   Finished: \(finished)")
+            print("📄 [Coordinator]   Completed: \(completed)")
+
             if completed,
                let visibleViewController = pageViewController.viewControllers?.first,
                let index = controllers.firstIndex(where: { $0 === visibleViewController }) {
-                print("📄 didFinishAnimating: index changed to \(index)")
+                print("📄 [Coordinator]   ✅ Page transition completed to index: \(index)")
+                print("📄 [Coordinator]   Previous index: \(currentIndex ?? -1)")
                 currentIndex = index
                 parent.currentIndex = index
+                print("📄 [Coordinator]   📢 Calling onPageChange(\(index))")
                 parent.onPageChange(index)
 
                 // ページ変更後にスクロール状態を更新
                 updateScrollEnabled()
+            } else {
+                print("📄 [Coordinator]   ⚠️ Transition not completed or visible VC not found")
             }
         }
     }

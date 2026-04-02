@@ -402,8 +402,12 @@ struct MainView: View {
                             // HStack全体の座標からprogressを計算
                             let progress = -minX / pageWidth
                             let clampedProgress = max(0.0, min(1.0, progress))
-                            buttonTransitionProgress = clampedProgress
-                            print("📊 HStack minX: \(minX), progress: \(clampedProgress)")
+
+                            // 変化が0.01以上の時のみ更新（過剰な再レンダリングを防ぐ）
+                            if abs(clampedProgress - buttonTransitionProgress) > 0.01 {
+                                buttonTransitionProgress = clampedProgress
+                                print("📊 [MainView] Progress update: \(String(format: "%.2f", clampedProgress)) (minX: \(String(format: "%.1f", minX)))")
+                            }
                         }
                 }
             )
