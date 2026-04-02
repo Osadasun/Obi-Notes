@@ -58,6 +58,9 @@ struct MainView: View {
     @State private var editedTitle = ""
     @FocusState private var isTitleFieldFocused: Bool
 
+    // 削除確認用
+    @State private var showDeleteConfirmation = false
+
     // UIPageViewControllerの内部余白を計算
     private func calculateBottomPadding(safeAreaBottom: CGFloat) -> CGFloat {
         // ホームボタンありデバイス: safe area bottom = 0, padding = -50
@@ -317,7 +320,7 @@ struct MainView: View {
                                 Divider()
 
                                 Button(role: .destructive, action: {
-                                    // TODO: 削除機能
+                                    showDeleteConfirmation = true
                                 }) {
                                     Label("削除", systemImage: "trash")
                                 }
@@ -440,6 +443,23 @@ struct MainView: View {
         .onChange(of: deepLinkManager.pendingMusic) { oldValue, newValue in
             if newValue != nil {
                 showAddAlbumSheet = true
+            }
+        }
+        .alert("削除確認", isPresented: $showDeleteConfirmation) {
+            Button("キャンセル", role: .cancel) { }
+            Button("削除", role: .destructive) {
+                Task {
+                    await deleteCurrentItem()
+                }
+            }
+        } message: {
+            switch obiPageManager.currentPage {
+            case .customList(let list):
+                Text("「\(list.name)」を削除しますか？この操作は取り消せません。")
+            case .userAlbum(let album):
+                Text("「\(album.name)」を削除しますか？この操作は取り消せません。")
+            default:
+                Text("削除しますか？")
             }
         }
     }
@@ -902,6 +922,44 @@ struct MainView: View {
             self.navigateToNewUserAlbum = true
         } catch {
             print("❌ [MainView] Failed to create album: \(error)")
+        }
+    }
+
+    /// カスタムリストまたはユーザーアルバムを削除
+    private func deleteCurrentItem() async {
+        guard selectedFeed == .obi else { return }
+
+        switch obiPageManager.currentPage {
+        case .customList(let list):
+            do {
+                try await SupabaseService.shared.deleteList(listId: list.id)
+                print("✅ [MainView] List deleted: \(list.name)")
+
+                // リストビューを再読み込み
+                await obiListViewModel.loadListCounts()
+
+                // カードリスト画面に戻る
+                obiPageManager.goBack()
+            } catch {
+                print("❌ [MainView] Failed to delete list: \(error)")
+            }
+
+        case .userAlbum(let album):
+            do {
+                try await SupabaseService.shared.deleteUserAlbum(albumId: album.id)
+                print("✅ [MainView] User album deleted: \(album.name)")
+
+                // リストビューを再読み込み
+                await obiListViewModel.loadListCounts()
+
+                // カードリスト画面に戻る
+                obiPageManager.goBack()
+            } catch {
+                print("❌ [MainView] Failed to delete user album: \(error)")
+            }
+
+        default:
+            break
         }
     }
 }

@@ -666,6 +666,18 @@ class SupabaseService {
             .execute()
     }
 
+    func deleteList(listId: UUID) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        try await client
+            .from("lists")
+            .delete()
+            .eq("id", value: listId)
+            .execute()
+    }
+
     func updateUserAlbum(albumId: String, name: String?, colorHex: String?) async throws {
         guard let client = client else {
             throw SupabaseError.notConfigured
