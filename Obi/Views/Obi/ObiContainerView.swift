@@ -51,6 +51,12 @@ struct ObiContainerView: View, Equatable {
                 }
             )
 
+        case .myReviews:
+            ObiListView(onNavigateToReview: { review in
+                pageManager.navigateTo(.reviewDetail(review))
+            })
+            .navigationBarHidden(true)
+
         case .defaultList(let category):
             ListDetailView(
                 listType: category,
@@ -102,6 +108,10 @@ struct ObiContainerView: View, Equatable {
         case .trackDetail(let track):
             TrackDetailView(track: track)
                 .navigationBarHidden(true)
+
+        case .reviewDetail(let review):
+            ReviewDetailView(review: review)
+                .navigationBarHidden(true)
         }
     }
 }
@@ -117,7 +127,9 @@ struct ObiCardListView: View {
             VStack(alignment: .leading, spacing: 24) {
                 // ObiCard表示エリア
                 GeometryReader { geometry in
-                    NavigationLink(destination: ObiListView()) {
+                    Button(action: {
+                        onNavigate(.myReviews)
+                    }) {
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color.gray.opacity(0.2))
                             .frame(width: geometry.size.width, height: geometry.size.width)

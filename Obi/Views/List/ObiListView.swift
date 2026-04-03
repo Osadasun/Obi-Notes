@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ObiListView: View {
     @StateObject private var viewModel = ObiListDetailViewModel()
+    var onNavigateToReview: ((Review) -> Void)? = nil
 
     var body: some View {
         ScrollView {
@@ -26,7 +27,9 @@ struct ObiListView: View {
             } else {
                 MasonryLayout(spacing: 16) {
                     ForEach(viewModel.reviews) { review in
-                        NavigationLink(destination: ReviewDetailView(review: review)) {
+                        Button(action: {
+                            onNavigateToReview?(review)
+                        }) {
                             ObiCard(
                                 artworkURL: review.albumArt,
                                 reviewTitle: review.reviewTitle ?? review.title,
@@ -41,10 +44,11 @@ struct ObiListView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 24)
+
+                Color.clear
+                    .frame(height: 120)
             }
         }
-        .navigationTitle("レビュー一覧")
-        .navigationBarTitleDisplayMode(.inline)
         .task {
             await viewModel.loadReviews()
         }

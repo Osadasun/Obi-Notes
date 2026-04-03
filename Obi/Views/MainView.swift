@@ -152,6 +152,7 @@ struct MainView: View {
 
                 // 下部ボタンエリア（ルート画面とリスト詳細のみ表示）
                 let isObiRoot = obiPageManager.currentPage.id == "cardList"
+                let isObiMyReviews = obiPageManager.currentPage.id == "myReviews"
                 let isObiListDetail: Bool = {
                     switch obiPageManager.currentPage {
                     case .defaultList, .customList:
@@ -161,7 +162,7 @@ struct MainView: View {
                     }
                 }()
                 let isExploreRoot = explorePageManager.currentPage.id == "feed"
-                let shouldShowButtons = (selectedFeed == .obi && (isObiRoot || isObiListDetail)) || (selectedFeed == .explore && isExploreRoot)
+                let shouldShowButtons = (selectedFeed == .obi && (isObiRoot || isObiMyReviews || isObiListDetail)) || (selectedFeed == .explore && isExploreRoot)
 
                 // 検索ボタン表示条件: Obiカードリストまたは、ExploreのFeed画面のみ
                 let shouldShowSearchButton = (selectedFeed == .obi && isObiRoot) || (selectedFeed == .explore && isExploreRoot)
@@ -270,6 +271,10 @@ struct MainView: View {
                 // リスト詳細の場合のみタイトル表示（userAlbum/albumDetail/trackDetailは各View内で表示）
                 if selectedFeed == .obi {
                     switch obiPageManager.currentPage {
+                    case .myReviews:
+                        Text("マイレビュー")
+                            .font(.headline)
+                            .foregroundColor(.primary)
                     case .defaultList(let category):
                         Text(category.rawValue)
                             .font(.headline)
@@ -306,12 +311,28 @@ struct MainView: View {
                 // 詳細ページの場合メニューボタン表示
                 if selectedFeed == .obi {
                     switch obiPageManager.currentPage {
-                    case .defaultList, .customList, .userAlbum, .albumDetail, .trackDetail:
+                    case .myReviews, .defaultList, .customList, .userAlbum, .albumDetail, .trackDetail:
                         Menu {
-                            Button(action: {
-                                // TODO: 編集機能
-                            }) {
-                                Label("編集", systemImage: "pencil")
+                            // マイレビュー専用メニュー
+                            if case .myReviews = obiPageManager.currentPage {
+                                Button(action: {
+                                    // TODO: 並べ替え機能
+                                }) {
+                                    Label("並べ替え", systemImage: "arrow.up.arrow.down")
+                                }
+
+                                Button(action: {
+                                    // TODO: グリッド表示切り替え
+                                }) {
+                                    Label("グリッド", systemImage: "square.grid.2x2")
+                                }
+                            } else {
+                                // 他のページの編集メニュー
+                                Button(action: {
+                                    // TODO: 編集機能
+                                }) {
+                                    Label("編集", systemImage: "pencil")
+                                }
                             }
 
                             // カスタム系のみ削除オプションを表示
