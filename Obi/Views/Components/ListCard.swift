@@ -16,6 +16,7 @@ struct ListCard: View {
     let isDefault: Bool
     let onPinToggle: (() -> Void)?
     let onEdit: (() -> Void)?
+    let onMove: (() -> Void)?
     let onDelete: (() -> Void)?
 
     init(
@@ -27,6 +28,7 @@ struct ListCard: View {
         isDefault: Bool = false,
         onPinToggle: (() -> Void)? = nil,
         onEdit: (() -> Void)? = nil,
+        onMove: (() -> Void)? = nil,
         onDelete: (() -> Void)? = nil
     ) {
         self.title = title
@@ -37,6 +39,7 @@ struct ListCard: View {
         self.isDefault = isDefault
         self.onPinToggle = onPinToggle
         self.onEdit = onEdit
+        self.onMove = onMove
         self.onDelete = onDelete
     }
 
@@ -113,6 +116,12 @@ struct ListCard: View {
                                 onEdit?()
                             }) {
                                 Label("編集", systemImage: "pencil")
+                            }
+
+                            Button(action: {
+                                onMove?()
+                            }) {
+                                Label("移動", systemImage: "folder")
                             }
 
                             Button(role: .destructive, action: {

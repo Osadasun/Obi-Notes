@@ -11,11 +11,15 @@ struct ObiContainerView: View, Equatable {
     let bottomSpacerHeight: CGFloat
     @ObservedObject var pageManager: ObiPageManager
     @ObservedObject var listViewModel: ObiListViewModel
+    let onMoveList: ((UUID) -> Void)?
+    let onMoveAlbum: ((String) -> Void)?
 
-    init(bottomSpacerHeight: CGFloat, pageManager: ObiPageManager, listViewModel: ObiListViewModel) {
+    init(bottomSpacerHeight: CGFloat, pageManager: ObiPageManager, listViewModel: ObiListViewModel, onMoveList: ((UUID) -> Void)? = nil, onMoveAlbum: ((String) -> Void)? = nil) {
         self.bottomSpacerHeight = bottomSpacerHeight
         self.pageManager = pageManager
         self.listViewModel = listViewModel
+        self.onMoveList = onMoveList
+        self.onMoveAlbum = onMoveAlbum
         print("🏗️ ObiContainerView init - pages: \(pageManager.pages.count), currentIndex: \(pageManager.currentIndex)")
     }
 
@@ -48,7 +52,9 @@ struct ObiContainerView: View, Equatable {
                 bottomSpacerHeight: bottomSpacerHeight,
                 onNavigate: { destination in
                     pageManager.navigateTo(destination)
-                }
+                },
+                onMoveList: onMoveList,
+                onMoveAlbum: onMoveAlbum
             )
 
         case .myReviews:
@@ -124,6 +130,8 @@ struct ObiCardListView: View {
     @ObservedObject var viewModel: ObiListViewModel
     let bottomSpacerHeight: CGFloat
     let onNavigate: (ObiPageContent) -> Void
+    let onMoveList: ((UUID) -> Void)?
+    let onMoveAlbum: ((String) -> Void)?
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -198,6 +206,9 @@ struct ObiCardListView: View {
                                             // TODO: 編集機能を実装
                                             print("編集: \(list.name)")
                                         } : nil,
+                                        onMove: list.defaultType == nil ? {
+                                            onMoveList?(list.id)
+                                        } : nil,
                                         onDelete: list.defaultType == nil ? {
                                             // TODO: 削除機能を実装
                                             print("削除: \(list.name)")
@@ -219,6 +230,9 @@ struct ObiCardListView: View {
                                         onEdit: {
                                             // TODO: 編集機能を実装
                                             print("編集: \(album.name)")
+                                        },
+                                        onMove: {
+                                            onMoveAlbum?(album.id)
                                         },
                                         onDelete: {
                                             // TODO: 削除機能を実装

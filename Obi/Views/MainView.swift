@@ -61,6 +61,10 @@ struct MainView: View {
     // 削除確認用
     @State private var showDeleteConfirmation = false
 
+    // 移動先選択用
+    @State private var showMoveSheet = false
+    @State private var moveSourceType: MoveToListViewModel.SourceType?
+
     // UIPageViewControllerの内部余白を計算
     private func calculateBottomPadding(safeAreaBottom: CGFloat) -> CGFloat {
         // ホームボタンありデバイス: safe area bottom = 0, padding = -50
@@ -335,13 +339,20 @@ struct MainView: View {
                                 }
                             }
 
-                            // カスタムリスト・ユーザーアルバムのピン留めと削除
+                            // カスタムリスト・ユーザーアルバムのピン留め、移動、削除
                             switch obiPageManager.currentPage {
                             case .customList(let list):
                                 Button(action: {
                                     obiListViewModel.togglePin(itemId: "list-\(list.id)")
                                 }) {
                                     Label(obiListViewModel.isPinned(itemId: "list-\(list.id)") ? "ピン留めを解除" : "ピン留め", systemImage: obiListViewModel.isPinned(itemId: "list-\(list.id)") ? "pin.slash" : "pin")
+                                }
+
+                                Button(action: {
+                                    moveSourceType = .list(list.id)
+                                    showMoveSheet = true
+                                }) {
+                                    Label("移動", systemImage: "folder")
                                 }
 
                                 Button(role: .destructive, action: {
@@ -354,6 +365,13 @@ struct MainView: View {
                                     obiListViewModel.togglePin(itemId: "album-\(album.id)")
                                 }) {
                                     Label(obiListViewModel.isPinned(itemId: "album-\(album.id)") ? "ピン留めを解除" : "ピン留め", systemImage: obiListViewModel.isPinned(itemId: "album-\(album.id)") ? "pin.slash" : "pin")
+                                }
+
+                                Button(action: {
+                                    moveSourceType = .userAlbum(album.id)
+                                    showMoveSheet = true
+                                }) {
+                                    Label("移動", systemImage: "folder")
                                 }
 
                                 Button(role: .destructive, action: {
@@ -425,7 +443,19 @@ struct MainView: View {
 
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 0) {
-                ObiContainerView(bottomSpacerHeight: bottomSpacerHeight, pageManager: obiPageManager, listViewModel: obiListViewModel)
+                ObiContainerView(
+                    bottomSpacerHeight: bottomSpacerHeight,
+                    pageManager: obiPageManager,
+                    listViewModel: obiListViewModel,
+                    onMoveList: { listId in
+                        moveSourceType = .list(listId)
+                        showMoveSheet = true
+                    },
+                    onMoveAlbum: { albumId in
+                        moveSourceType = .userAlbum(albumId)
+                        showMoveSheet = true
+                    }
+                )
                     .equatable()
                     .containerRelativeFrame(.horizontal)
                     .id(0)
@@ -497,6 +527,15 @@ struct MainView: View {
                 Text("「\(album.name)」を削除しますか？この操作は取り消せません。")
             default:
                 Text("削除しますか？")
+            }
+        }
+        .sheet(isPresented: $showMoveSheet) {
+            if let sourceType = moveSourceType {
+                MoveToListView(sourceType: sourceType, obiListViewModel: obiListViewModel) {
+                    Task {
+                        await obiListViewModel.loadListCounts()
+                    }
+                }
             }
         }
     }

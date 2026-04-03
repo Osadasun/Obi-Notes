@@ -704,6 +704,56 @@ class SupabaseService {
             .execute()
     }
 
+    func moveListToParent(listId: UUID, parentListId: UUID?) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        struct UpdateParent: Encodable {
+            let parent_list_id: UUID?
+        }
+
+        let updates = UpdateParent(parent_list_id: parentListId)
+
+        try await client
+            .from("lists")
+            .update(updates)
+            .eq("id", value: listId)
+            .execute()
+
+        print("✅ [moveListToParent] Moved list \(listId) to parent: \(parentListId?.uuidString ?? "root")")
+    }
+
+    func moveUserAlbumToParent(albumId: String, parentListId: String?) async throws {
+        guard let client = client else {
+            throw SupabaseError.notConfigured
+        }
+
+        guard let albumUUID = UUID(uuidString: albumId) else {
+            throw SupabaseError.notConfigured
+        }
+
+        let parentUUID: UUID? = if let parentId = parentListId {
+            UUID(uuidString: parentId)
+        } else {
+            nil
+        }
+
+        struct UpdateParent: Encodable {
+            let parent_list_id: UUID?
+        }
+
+        let updates = UpdateParent(parent_list_id: parentUUID)
+
+        try await client
+            .from("user_albums")
+            .update(updates)
+            .eq("id", value: albumUUID)
+            .execute()
+
+        print("✅ [moveUserAlbumToParent] Moved album \(albumId) to parent: \(parentListId ?? "root")")
+    }
+
     // MARK: - User Album Tracks
 
     func addTrackToUserAlbum(albumId: String, trackId: String, title: String, artist: String, albumArt: String?) async throws {
