@@ -24,6 +24,21 @@ class AlbumDetailViewModel: ObservableObject {
 
     init(album: Album) {
         self.album = album
+
+        // アルバム詳細遷移時のデータログ
+        print("🎵 ========== Album Detail Transition ==========")
+        print("🎵 Title: \(album.title)")
+        print("🎵 Artist: \(album.artist)")
+        print("🎵 ID: \(album.id)")
+        if let releaseDate = album.releaseDate {
+            print("🎵 Release Date: \(releaseDate)")
+        } else {
+            print("🎵 Release Date: N/A")
+        }
+        print("🎵 Track Count: \(album.trackCount ?? 0)")
+        print("🎵 Genre: \(album.genre ?? "N/A")")
+        print("🎵 Artwork URL: \(album.artworkURL ?? "N/A")")
+        print("🎵 ==============================================")
     }
 
     // MARK: - Load Data
@@ -71,6 +86,22 @@ class AlbumDetailViewModel: ObservableObject {
         do {
             tracks = try await musicService.fetchAlbumTracks(albumId: album.id)
             print("✅ アルバムトラック取得成功: \(tracks.count)件")
+
+            // トラック詳細ログ
+            print("🎵 ========== Album Tracks ==========")
+            for (index, track) in tracks.enumerated() {
+                print("🎵 Track \(index + 1):")
+                print("🎵   Title: \(track.title)")
+                print("🎵   Artist: \(track.artist)")
+                print("🎵   ID: \(track.id)")
+                print("🎵   Album Title: \(track.albumTitle ?? "N/A")")
+                print("🎵   Duration: \(track.durationFormatted ?? "N/A")")
+                print("🎵   Track Number: \(track.trackNumber ?? 0)")
+                print("🎵   Artwork URL: \(track.artworkURL ?? "N/A")")
+                print("🎵   Genre: \(track.genre ?? "N/A")")
+                print("🎵   -----------")
+            }
+            print("🎵 ====================================")
         } catch {
             print("❌ アルバムトラック取得エラー: \(error)")
             errorMessage = error.localizedDescription

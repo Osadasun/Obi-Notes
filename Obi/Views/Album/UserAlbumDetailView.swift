@@ -160,7 +160,8 @@ struct UserAlbumDetailView: View {
                                         albumTitle: nil,
                                         artworkURL: item.albumArt,
                                         duration: nil,
-                                        trackNumber: nil
+                                        trackNumber: nil,
+                                        genre: nil
                                     )
                                     onNavigateToTrack?(track)
                                 }) {

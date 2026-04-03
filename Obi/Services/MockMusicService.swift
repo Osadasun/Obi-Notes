@@ -70,7 +70,8 @@ class MockMusicService {
             albumTitle: "THE BOOK",
             artworkURL: nil,
             duration: 260000,
-            trackNumber: 1
+            trackNumber: 1,
+            genre: "J-Pop"
         ),
         Track(
             id: "1440935501",
@@ -79,7 +80,8 @@ class MockMusicService {
             albumTitle: "Lemon",
             artworkURL: nil,
             duration: 280000,
-            trackNumber: 1
+            trackNumber: 1,
+            genre: "J-Pop"
         ),
         Track(
             id: "1440935502",
@@ -88,7 +90,8 @@ class MockMusicService {
             albumTitle: "だから僕は音楽を辞めた",
             artworkURL: nil,
             duration: 245000,
-            trackNumber: 5
+            trackNumber: 5,
+            genre: "J-Pop"
         )
     ]
 

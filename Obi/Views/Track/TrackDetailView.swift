@@ -187,7 +187,8 @@ struct TrackDetailView: View {
             albumTitle: "Abbey Road",
             artworkURL: "https://example.com/artwork.jpg",
             duration: 259000,
-            trackNumber: 1
+            trackNumber: 1,
+            genre: "Rock"
         ))
     }
 }

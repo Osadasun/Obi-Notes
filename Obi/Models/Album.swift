@@ -35,6 +35,7 @@ struct Track: Identifiable, Codable, Equatable {
     let artworkURL: String?
     let duration: Int? // ミリ秒
     let trackNumber: Int?
+    let genre: String? // ジャンル
 
     var durationFormatted: String? {
         guard let duration = duration else { return nil }

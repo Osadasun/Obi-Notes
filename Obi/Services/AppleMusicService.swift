@@ -91,7 +91,8 @@ class AppleMusicService {
                 albumTitle: musicKitSong.albumTitle,
                 artworkURL: musicKitSong.artwork?.url(width: 600, height: 600)?.absoluteString,
                 duration: musicKitSong.duration.map { Int($0 * 1000) },
-                trackNumber: musicKitSong.trackNumber
+                trackNumber: musicKitSong.trackNumber,
+                genre: musicKitSong.genreNames.first
             )
         }
 
@@ -139,7 +140,8 @@ class AppleMusicService {
                 albumTitle: musicKitSong.albumTitle,
                 artworkURL: musicKitSong.artwork?.url(width: 600, height: 600)?.absoluteString,
                 duration: musicKitSong.duration.map { Int($0 * 1000) },
-                trackNumber: musicKitSong.trackNumber
+                trackNumber: musicKitSong.trackNumber,
+                genre: musicKitSong.genreNames.first
             )
         }
     }
@@ -232,7 +234,8 @@ class AppleMusicService {
             albumTitle: musicKitSong.albumTitle,
             artworkURL: musicKitSong.artwork?.url(width: 600, height: 600)?.absoluteString,
             duration: musicKitSong.duration.map { Int($0 * 1000) },
-            trackNumber: musicKitSong.trackNumber
+            trackNumber: musicKitSong.trackNumber,
+            genre: musicKitSong.genreNames.first
         )
     }
 
@@ -266,7 +269,8 @@ class AppleMusicService {
                 albumTitle: musicKitSong.albumTitle,
                 artworkURL: musicKitSong.artwork?.url(width: 600, height: 600)?.absoluteString,
                 duration: musicKitSong.duration.map { Int($0 * 1000) },
-                trackNumber: musicKitSong.trackNumber
+                trackNumber: musicKitSong.trackNumber,
+                genre: musicKitSong.genreNames.first
             )
         }
     }
