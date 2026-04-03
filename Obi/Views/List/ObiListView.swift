@@ -36,7 +36,8 @@ struct ObiListView: View {
                                 reviewText: review.text ?? "レビューテキストがありません",
                                 cardHeight: 240,
                                 style: ObiCardStyle.forTargetType(review.targetType),
-                                rating: review.rating
+                                rating: review.rating,
+                                useFlexibleWidth: true
                             )
                         }
                         .buttonStyle(.plain)
@@ -70,11 +71,16 @@ struct MasonryLayout: Layout {
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let columnWidth = (bounds.width - spacing) / 2
+        // 2カラム + 中央のスペース16pxを考慮
+        // bounds.widthは既にpaddingが適用された幅
+        let availableWidth = bounds.width
+        let columnWidth = (availableWidth - spacing) / 2
         var columnHeights: [CGFloat] = [0, 0]
 
         for subview in subviews {
             let shortestColumn = columnHeights.firstIndex(of: columnHeights.min() ?? 0) ?? 0
+            // 左カラム(0): bounds.minX
+            // 右カラム(1): bounds.minX + columnWidth + spacing
             let x = bounds.minX + CGFloat(shortestColumn) * (columnWidth + spacing)
             let y = bounds.minY + columnHeights[shortestColumn]
 
@@ -86,6 +92,7 @@ struct MasonryLayout: Layout {
     }
 
     private func calculateHeight(width: CGFloat, subviews: Subviews) -> CGFloat {
+        // 2カラム + 中央のスペース16pxを考慮
         let columnWidth = (width - spacing) / 2
         var columnHeights: [CGFloat] = [0, 0]
 

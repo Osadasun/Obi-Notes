@@ -49,6 +49,7 @@ struct ObiCard: View {
     let cardHeight: CGFloat
     let style: ObiCardStyle
     let rating: Double?
+    let useFlexibleWidth: Bool
 
     @State private var obiColor: Color = Color(red: 0.4, green: 0.2, blue: 0.15)
 
@@ -58,7 +59,8 @@ struct ObiCard: View {
         reviewText: String,
         cardHeight: CGFloat,
         style: ObiCardStyle = .horizontal,
-        rating: Double? = nil
+        rating: Double? = nil,
+        useFlexibleWidth: Bool = false
     ) {
         self.artworkURL = artworkURL
         self.reviewTitle = reviewTitle
@@ -66,6 +68,7 @@ struct ObiCard: View {
         self.cardHeight = cardHeight
         self.style = style
         self.rating = rating
+        self.useFlexibleWidth = useFlexibleWidth
     }
 
     var body: some View {
@@ -191,66 +194,136 @@ struct ObiCard: View {
         let vPadding: CGFloat = cardHeight > 300 ? 12 : 8
         let minSpacing: CGFloat = cardHeight > 300 ? 8 : 4
 
-        return ZStack(alignment: .bottomLeading) {
-            // 背景のアートワーク（正方形）
-            Group {
-                if let urlString = artworkURL, let url = URL(string: urlString) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .onAppear {
-                                    extractColorFromURL(url)
+        if useFlexibleWidth {
+            return AnyView(
+                GeometryReader { geometry in
+                    ZStack(alignment: .bottomLeading) {
+                        // 背景のアートワーク（正方形）
+                        Group {
+                            if let urlString = artworkURL, let url = URL(string: urlString) {
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .onAppear {
+                                                extractColorFromURL(url)
+                                            }
+                                    case .failure:
+                                        Color.gray.opacity(0.3)
+                                    case .empty:
+                                        Color.gray.opacity(0.3)
+                                    @unknown default:
+                                        Color.gray.opacity(0.3)
+                                    }
                                 }
-                        case .failure:
-                            Color.gray.opacity(0.3)
-                        case .empty:
-                            Color.gray.opacity(0.3)
-                        @unknown default:
+                            } else {
+                                Color.gray.opacity(0.3)
+                            }
+                        }
+                        .frame(width: geometry.size.width, height: geometry.size.width)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                        // 下部の帯（背景 + テキスト）
+                        VStack(alignment: .leading, spacing: vSpacing) {
+                            HStack(alignment: .center, spacing: hSpacing) {
+                                Text(reviewTitle)
+                                    .font(.system(size: titleSize, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+
+                                Spacer(minLength: minSpacing)
+
+                                if let rating = rating {
+                                    Text(String(format: "★ %.1f", rating))
+                                        .font(.system(size: ratingSize, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .fixedSize()
+                                }
+                            }
+
+                            Text(reviewText)
+                                .font(.system(size: textSize))
+                                .foregroundColor(.white.opacity(0.95))
+                                .lineLimit(2)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, hPadding)
+                        .padding(.vertical, vPadding)
+                        .background(obiColor)
+                    }
+                    .frame(width: geometry.size.width, height: geometry.size.width)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+                }
+                .aspectRatio(1, contentMode: .fit)
+            )
+        } else {
+            return AnyView(
+                ZStack(alignment: .bottomLeading) {
+                    // 背景のアートワーク（正方形）
+                    Group {
+                        if let urlString = artworkURL, let url = URL(string: urlString) {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .onAppear {
+                                            extractColorFromURL(url)
+                                        }
+                                case .failure:
+                                    Color.gray.opacity(0.3)
+                                case .empty:
+                                    Color.gray.opacity(0.3)
+                                @unknown default:
+                                    Color.gray.opacity(0.3)
+                                }
+                            }
+                        } else {
                             Color.gray.opacity(0.3)
                         }
                     }
-                } else {
-                    Color.gray.opacity(0.3)
-                }
-            }
-            .frame(width: cardHeight * 0.75, height: cardHeight * 0.75)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .frame(width: cardHeight * 0.75, height: cardHeight * 0.75)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
 
-            // 下部の帯（背景 + テキスト）
-            VStack(alignment: .leading, spacing: vSpacing) {
-                HStack(alignment: .center, spacing: hSpacing) {
-                    Text(reviewTitle)
-                        .font(.system(size: titleSize, weight: .bold))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
+                    // 下部の帯（背景 + テキスト）
+                    VStack(alignment: .leading, spacing: vSpacing) {
+                        HStack(alignment: .center, spacing: hSpacing) {
+                            Text(reviewTitle)
+                                .font(.system(size: titleSize, weight: .bold))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
 
-                    Spacer(minLength: minSpacing)
+                            Spacer(minLength: minSpacing)
 
-                    if let rating = rating {
-                        Text(String(format: "★ %.1f", rating))
-                            .font(.system(size: ratingSize, weight: .semibold))
-                            .foregroundColor(.white)
-                            .fixedSize()
+                            if let rating = rating {
+                                Text(String(format: "★ %.1f", rating))
+                                    .font(.system(size: ratingSize, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .fixedSize()
+                            }
+                        }
+
+                        Text(reviewText)
+                            .font(.system(size: textSize))
+                            .foregroundColor(.white.opacity(0.95))
+                            .lineLimit(2)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, hPadding)
+                    .padding(.vertical, vPadding)
+                    .background(obiColor)
                 }
-
-                Text(reviewText)
-                    .font(.system(size: textSize))
-                    .foregroundColor(.white.opacity(0.95))
-                    .lineLimit(2)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, hPadding)
-            .padding(.vertical, vPadding)
-            .background(obiColor)
+                .frame(width: cardHeight * 0.75, height: cardHeight * 0.75)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+            )
         }
-        .frame(width: cardHeight * 0.75, height: cardHeight * 0.75)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
     }
 
     // MARK: - Artwork View（共通アートワーク表示）
