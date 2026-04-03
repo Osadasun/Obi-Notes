@@ -442,6 +442,13 @@ struct MainView: View {
         let pageWidth = geometry.size.width
         let bottomPadding = calculateBottomPadding(safeAreaBottom: geometry.safeAreaInsets.bottom)
 
+        // Obi/Explore間のスワイプを無効化する条件:
+        // - Obiタブで詳細画面にいる場合（カードリスト以外）
+        // - Exploreタブで詳細画面にいる場合（フィード以外）
+        let isObiDetailScreen = obiPageManager.currentIndex > 0
+        let isExploreDetailScreen = explorePageManager.currentIndex > 0
+        let shouldDisableHorizontalScroll = isObiDetailScreen || isExploreDetailScreen
+
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 0) {
                 ObiContainerView(
@@ -484,6 +491,7 @@ struct MainView: View {
                 }
             )
         }
+        .scrollDisabled(shouldDisableHorizontalScroll)
         .scrollPosition(id: $scrollPosition)
         .scrollTargetBehavior(PagingScrollTargetBehavior())
         .ignoresSafeArea()
