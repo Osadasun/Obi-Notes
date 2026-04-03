@@ -471,7 +471,7 @@ struct MainView: View {
         }
         .sheet(isPresented: $showAddAlbumSheet) {
             if let pendingMusic = deepLinkManager.pendingMusic {
-                AddAlbumFromShareView(musicId: pendingMusic.id, musicType: pendingMusic.type)
+                AddAlbumFromShareView(musicId: pendingMusic.id, musicType: pendingMusic.type, obiListViewModel: obiListViewModel)
                     .onDisappear {
                         deepLinkManager.clearPendingMusic()
                     }

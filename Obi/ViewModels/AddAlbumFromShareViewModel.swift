@@ -13,7 +13,9 @@ class AddAlbumFromShareViewModel: ObservableObject {
     @Published var album: Album?
     @Published var track: Track?
     @Published var lists: [MusicList] = []
+    @Published var sortedLists: [MusicList] = [] // ピン留めとアクティビティ順でソート
     @Published var userAlbums: [UserAlbum] = []
+    @Published var sortedUserAlbums: [UserAlbum] = [] // ピン留めとアクティビティ順でソート
     @Published var selectedList: MusicList?
     @Published var selectedUserAlbum: UserAlbum?
     @Published var isLoading = false
@@ -26,10 +28,14 @@ class AddAlbumFromShareViewModel: ObservableObject {
     private let musicType: MusicTargetType
     private let appleMusicService = AppleMusicService.shared
     private let supabaseService = SupabaseService.shared
+    private var listLatestDates: [UUID: Date] = [:]
+    private var albumLatestDates: [String: Date] = [:]
+    var obiListViewModel: ObiListViewModel? = nil
 
-    init(musicId: String, musicType: MusicTargetType) {
+    init(musicId: String, musicType: MusicTargetType, obiListViewModel: ObiListViewModel? = nil) {
         self.musicId = musicId
         self.musicType = musicType
+        self.obiListViewModel = obiListViewModel
     }
 
     func loadMusic() async {
@@ -71,6 +77,20 @@ class AddAlbumFromShareViewModel: ObservableObject {
             case .album:
                 // アルバムの場合はリストを取得
                 lists = try await supabaseService.fetchUserLists(userId: userId)
+
+                // 各リストの最新アクティビティ日付を計算
+                var latestDates: [UUID: Date] = [:]
+                for list in lists {
+                    let items = try await supabaseService.fetchListItems(listId: list.id)
+                    let latestItemDate = items.map { $0.addedAt }.max()
+                    let latestActivityDate = max(list.createdAt, latestItemDate ?? list.createdAt)
+                    latestDates[list.id] = latestActivityDate
+                }
+                listLatestDates = latestDates
+
+                // ソート実行
+                sortLists()
+
                 // デフォルトで「聴いた」リストを選択
                 selectedList = lists.first(where: { $0.defaultType == .listened })
                 print("✅ [AddAlbumFromShare] Loaded \(lists.count) lists")
@@ -78,6 +98,20 @@ class AddAlbumFromShareViewModel: ObservableObject {
             case .track:
                 // トラックの場合はユーザーアルバムを取得
                 userAlbums = try await supabaseService.fetchUserAlbums(userId: userId.uuidString)
+
+                // 各アルバムの最新アクティビティ日付を計算
+                var latestDates: [String: Date] = [:]
+                for album in userAlbums {
+                    let tracks = try await supabaseService.fetchUserAlbumTracks(albumId: album.id)
+                    let latestTrackDate = tracks.map { $0.addedAt }.max()
+                    let latestActivityDate = max(album.updatedAt, latestTrackDate ?? album.updatedAt)
+                    latestDates[album.id] = latestActivityDate
+                }
+                albumLatestDates = latestDates
+
+                // ソート実行
+                sortUserAlbums()
+
                 print("✅ [AddAlbumFromShare] Loaded \(userAlbums.count) user albums")
             }
         } catch {
@@ -86,6 +120,86 @@ class AddAlbumFromShareViewModel: ObservableObject {
         }
 
         isLoadingLists = false
+    }
+
+    // MARK: - Sort Lists
+
+    private func sortLists() {
+        guard let obiListViewModel = obiListViewModel else {
+            // obiListViewModelがない場合は最新日付順のみ
+            sortedLists = lists.sorted { list1, list2 in
+                let date1 = listLatestDates[list1.id] ?? list1.createdAt
+                let date2 = listLatestDates[list2.id] ?? list2.createdAt
+                return date1 > date2
+            }
+            return
+        }
+
+        // ピン留めとアクティビティ日付を考慮してソート（ObiViewと同じロジック）
+        sortedLists = lists.sorted { list1, list2 in
+            let itemId1 = "list-\(list1.id)"
+            let itemId2 = "list-\(list2.id)"
+            let isPinned1 = obiListViewModel.isPinned(itemId: itemId1)
+            let isPinned2 = obiListViewModel.isPinned(itemId: itemId2)
+
+            // ピン留めされているリストが優先
+            if isPinned1 && !isPinned2 {
+                return true
+            } else if !isPinned1 && isPinned2 {
+                return false
+            } else if isPinned1 && isPinned2 {
+                // 両方ピン留めされている場合は、ピン留めした順序
+                let pinnedIds = obiListViewModel.pinnedItemIds
+                let index1 = pinnedIds.firstIndex(of: itemId1) ?? 0
+                let index2 = pinnedIds.firstIndex(of: itemId2) ?? 0
+                return index1 < index2
+            } else {
+                // 両方ピン留めされていない場合は、最新日付順
+                let date1 = listLatestDates[list1.id] ?? list1.createdAt
+                let date2 = listLatestDates[list2.id] ?? list2.createdAt
+                return date1 > date2
+            }
+        }
+    }
+
+    // MARK: - Sort User Albums
+
+    private func sortUserAlbums() {
+        guard let obiListViewModel = obiListViewModel else {
+            // obiListViewModelがない場合は最新日付順のみ
+            sortedUserAlbums = userAlbums.sorted { album1, album2 in
+                let date1 = albumLatestDates[album1.id] ?? album1.updatedAt
+                let date2 = albumLatestDates[album2.id] ?? album2.updatedAt
+                return date1 > date2
+            }
+            return
+        }
+
+        // ピン留めとアクティビティ日付を考慮してソート
+        sortedUserAlbums = userAlbums.sorted { album1, album2 in
+            let itemId1 = "album-\(album1.id)"
+            let itemId2 = "album-\(album2.id)"
+            let isPinned1 = obiListViewModel.isPinned(itemId: itemId1)
+            let isPinned2 = obiListViewModel.isPinned(itemId: itemId2)
+
+            // ピン留めされているアルバムが優先
+            if isPinned1 && !isPinned2 {
+                return true
+            } else if !isPinned1 && isPinned2 {
+                return false
+            } else if isPinned1 && isPinned2 {
+                // 両方ピン留めされている場合は、ピン留めした順序
+                let pinnedIds = obiListViewModel.pinnedItemIds
+                let index1 = pinnedIds.firstIndex(of: itemId1) ?? 0
+                let index2 = pinnedIds.firstIndex(of: itemId2) ?? 0
+                return index1 < index2
+            } else {
+                // 両方ピン留めされていない場合は、最新日付順
+                let date1 = albumLatestDates[album1.id] ?? album1.updatedAt
+                let date2 = albumLatestDates[album2.id] ?? album2.updatedAt
+                return date1 > date2
+            }
+        }
     }
 
     func addToSelectedDestination() async {

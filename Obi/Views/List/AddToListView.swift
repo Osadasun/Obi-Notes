@@ -11,12 +11,12 @@ struct AddToListView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var viewModel: AddToListViewModel
 
-    init(album: Album) {
-        _viewModel = StateObject(wrappedValue: AddToListViewModel(targetType: .album, targetId: album.id, title: album.title, artist: album.artist, artworkURL: album.artworkURL))
+    init(album: Album, obiListViewModel: ObiListViewModel? = nil) {
+        _viewModel = StateObject(wrappedValue: AddToListViewModel(targetType: .album, targetId: album.id, title: album.title, artist: album.artist, artworkURL: album.artworkURL, obiListViewModel: obiListViewModel))
     }
 
-    init(track: Track) {
-        _viewModel = StateObject(wrappedValue: AddToListViewModel(targetType: .track, targetId: track.id, title: track.title, artist: track.artist, artworkURL: track.artworkURL))
+    init(track: Track, obiListViewModel: ObiListViewModel? = nil) {
+        _viewModel = StateObject(wrappedValue: AddToListViewModel(targetType: .track, targetId: track.id, title: track.title, artist: track.artist, artworkURL: track.artworkURL, obiListViewModel: obiListViewModel))
     }
 
     var body: some View {
@@ -35,63 +35,27 @@ struct AddToListView: View {
                         )
                         .padding(.top, 100)
                     } else {
-                        VStack(alignment: .leading, spacing: 20) {
-                            // デフォルトリスト
-                            if !viewModel.defaultLists.isEmpty {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text("デフォルトリスト")
-                                        .font(.headline)
-                                        .padding(.horizontal, 24)
-
-                                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], spacing: 20) {
-                                        ForEach(viewModel.defaultLists) { list in
-                                            Button(action: {
-                                                Task {
-                                                    await viewModel.toggleList(list)
-                                                }
-                                            }) {
-                                                ListCard(
-                                                    title: list.name,
-                                                    count: viewModel.listCounts[list.id] ?? 0,
-                                                    artworkURLs: viewModel.listArtworks[list.id] ?? [],
-                                                    isSelected: viewModel.addedListIds.contains(list.id)
-                                                )
-                                            }
-                                            .buttonStyle(.plain)
-                                        }
+                        // 統一表示（デフォルトリスト + カスタムリスト、ピン留めとアクティビティ順でソート）
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], spacing: 20) {
+                            ForEach(viewModel.sortedLists) { list in
+                                Button(action: {
+                                    Task {
+                                        await viewModel.toggleList(list)
                                     }
-                                    .padding(.horizontal, 24)
+                                }) {
+                                    ListCard(
+                                        title: list.name,
+                                        count: viewModel.listCounts[list.id] ?? 0,
+                                        artworkURLs: viewModel.listArtworks[list.id] ?? [],
+                                        isSelected: viewModel.addedListIds.contains(list.id),
+                                        isPinned: viewModel.obiListViewModel?.isPinned(itemId: "list-\(list.id)") ?? false,
+                                        isDefault: list.defaultType != nil
+                                    )
                                 }
-                            }
-
-                            // カスタムリスト
-                            if !viewModel.customLists.isEmpty {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text("カスタムリスト")
-                                        .font(.headline)
-                                        .padding(.horizontal, 24)
-
-                                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], spacing: 20) {
-                                        ForEach(viewModel.customLists) { list in
-                                            Button(action: {
-                                                Task {
-                                                    await viewModel.toggleList(list)
-                                                }
-                                            }) {
-                                                ListCard(
-                                                    title: list.name,
-                                                    count: viewModel.listCounts[list.id] ?? 0,
-                                                    artworkURLs: viewModel.listArtworks[list.id] ?? [],
-                                                    isSelected: viewModel.addedListIds.contains(list.id)
-                                                )
-                                            }
-                                            .buttonStyle(.plain)
-                                        }
-                                    }
-                                    .padding(.horizontal, 24)
-                                }
+                                .buttonStyle(.plain)
                             }
                         }
+                        .padding(.horizontal, 24)
                         .padding(.top, 40)
                     }
                 }

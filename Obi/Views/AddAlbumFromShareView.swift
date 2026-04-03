@@ -13,10 +13,10 @@ struct AddAlbumFromShareView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var viewModel: AddAlbumFromShareViewModel
 
-    init(musicId: String, musicType: MusicTargetType) {
+    init(musicId: String, musicType: MusicTargetType, obiListViewModel: ObiListViewModel? = nil) {
         self.musicId = musicId
         self.musicType = musicType
-        self._viewModel = StateObject(wrappedValue: AddAlbumFromShareViewModel(musicId: musicId, musicType: musicType))
+        self._viewModel = StateObject(wrappedValue: AddAlbumFromShareViewModel(musicId: musicId, musicType: musicType, obiListViewModel: obiListViewModel))
     }
 
     var body: some View {
@@ -88,13 +88,19 @@ struct AddAlbumFromShareView: View {
                                     }
                                     .padding()
                                 } else {
-                                    ForEach(viewModel.lists) { list in
+                                    ForEach(viewModel.sortedLists) { list in
                                         Button(action: {
                                             viewModel.selectedList = list
                                         }) {
                                             HStack {
                                                 Image(systemName: viewModel.selectedList?.id == list.id ? "checkmark.circle.fill" : "circle")
                                                     .foregroundColor(viewModel.selectedList?.id == list.id ? .purple : .gray)
+
+                                                if viewModel.obiListViewModel?.isPinned(itemId: "list-\(list.id)") == true {
+                                                    Image(systemName: "pin.fill")
+                                                        .font(.caption2)
+                                                        .foregroundColor(.orange)
+                                                }
 
                                                 Text(list.name)
                                                     .foregroundColor(.primary)
@@ -202,7 +208,7 @@ struct AddAlbumFromShareView: View {
                                         GridItem(.flexible(), spacing: 16),
                                         GridItem(.flexible(), spacing: 16)
                                     ], spacing: 16) {
-                                        ForEach(viewModel.userAlbums) { album in
+                                        ForEach(viewModel.sortedUserAlbums) { album in
                                             Button(action: {
                                                 viewModel.selectedUserAlbum = album
                                             }) {
@@ -210,7 +216,8 @@ struct AddAlbumFromShareView: View {
                                                     title: album.name,
                                                     artistName: album.artistName,
                                                     colorHex: album.colorHex,
-                                                    isSelected: viewModel.selectedUserAlbum?.id == album.id
+                                                    isSelected: viewModel.selectedUserAlbum?.id == album.id,
+                                                    isPinned: viewModel.obiListViewModel?.isPinned(itemId: "album-\(album.id)") ?? false
                                                 )
                                             }
                                         }

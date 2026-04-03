@@ -103,12 +103,13 @@ struct ObiContainerView: View, Equatable {
                 album: album,
                 onNavigateToTrack: { track in
                     pageManager.navigateTo(.trackDetail(track))
-                }
+                },
+                obiListViewModel: listViewModel
             )
             .navigationBarHidden(true)
 
         case .trackDetail(let track):
-            TrackDetailView(track: track)
+            TrackDetailView(track: track, obiListViewModel: listViewModel)
                 .navigationBarHidden(true)
 
         case .reviewDetail(let review):

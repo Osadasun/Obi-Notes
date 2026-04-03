@@ -11,9 +11,11 @@ struct TrackDetailView: View {
     @StateObject private var viewModel: TrackDetailViewModel
     @State private var showingReviewSheet = false
     @State private var showingAddToListSheet = false
+    var obiListViewModel: ObiListViewModel? = nil
 
-    init(track: Track) {
+    init(track: Track, obiListViewModel: ObiListViewModel? = nil) {
         _viewModel = StateObject(wrappedValue: TrackDetailViewModel(track: track))
+        self.obiListViewModel = obiListViewModel
     }
 
     var body: some View {
@@ -50,7 +52,7 @@ struct TrackDetailView: View {
                 await viewModel.checkIfInAnyList()
             }
         }) {
-            AddToListView(track: viewModel.track)
+            AddToListView(track: viewModel.track, obiListViewModel: obiListViewModel)
         }
         .task {
             await viewModel.loadData()

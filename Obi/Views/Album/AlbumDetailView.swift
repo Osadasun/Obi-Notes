@@ -12,10 +12,12 @@ struct AlbumDetailView: View {
     @State private var showingReviewSheet = false
     @State private var showingAddToListSheet = false
     var onNavigateToTrack: ((Track) -> Void)? = nil
+    var obiListViewModel: ObiListViewModel? = nil
 
-    init(album: Album, onNavigateToTrack: ((Track) -> Void)? = nil) {
+    init(album: Album, onNavigateToTrack: ((Track) -> Void)? = nil, obiListViewModel: ObiListViewModel? = nil) {
         _viewModel = StateObject(wrappedValue: AlbumDetailViewModel(album: album))
         self.onNavigateToTrack = onNavigateToTrack
+        self.obiListViewModel = obiListViewModel
     }
 
     var body: some View {
@@ -57,7 +59,7 @@ struct AlbumDetailView: View {
                 await viewModel.checkIfInAnyList()
             }
         }) {
-            AddToListView(album: viewModel.album)
+            AddToListView(album: viewModel.album, obiListViewModel: obiListViewModel)
         }
         .task {
             await viewModel.loadData()
