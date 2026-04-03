@@ -1127,77 +1127,62 @@ struct CustomListDetailView: View {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                         .padding()
+                } else if viewModel.albums.isEmpty && viewModel.childLists.isEmpty && viewModel.childUserAlbums.isEmpty {
+                    ContentUnavailableView(
+                        "アイテムがありません",
+                        systemImage: "music.note",
+                        description: Text("アルバムやリストを追加してみましょう")
+                    )
+                    .padding(.vertical, 40)
                 } else {
-                    // 子リスト/アルバムセクション（存在する場合のみ表示）
-                    if !viewModel.childLists.isEmpty || !viewModel.childUserAlbums.isEmpty {
-                        LazyVGrid(columns: [
-                            GridItem(.flexible(), spacing: 20),
-                            GridItem(.flexible(), spacing: 20)
-                        ], spacing: 20) {
-                            // 子カスタムリスト
-                            ForEach(viewModel.childLists) { childList in
-                                Button(action: {
-                                    onNavigateToList?(childList)
-                                }) {
-                                    ListCard(
-                                        title: childList.name,
-                                        count: 0,
-                                        artworkURLs: []
-                                    )
-                                }
-                                .buttonStyle(.plain)
+                    // 全アイテムを1つのMasonryLayoutで表示
+                    MasonryLayout(spacing: 20) {
+                        // 子カスタムリスト
+                        ForEach(viewModel.childLists) { childList in
+                            Button(action: {
+                                onNavigateToList?(childList)
+                            }) {
+                                ListCard(
+                                    title: childList.name,
+                                    count: 0,
+                                    artworkURLs: []
+                                )
                             }
-
-                            // 子ユーザーアルバム
-                            ForEach(viewModel.childUserAlbums) { childAlbum in
-                                Button(action: {
-                                    onNavigateToUserAlbum?(childAlbum)
-                                }) {
-                                    AlbumCard(
-                                        title: childAlbum.name,
-                                        artistName: childAlbum.artistName,
-                                        colorHex: childAlbum.colorHex
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                            }
+                            .buttonStyle(.plain)
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.top, 40)
-                    }
 
-                    // 音楽アルバムセクション
-                    if viewModel.albums.isEmpty && viewModel.childLists.isEmpty && viewModel.childUserAlbums.isEmpty {
-                        ContentUnavailableView(
-                            "アイテムがありません",
-                            systemImage: "music.note",
-                            description: Text("アルバムやリストを追加してみましょう")
-                        )
-                        .padding(.vertical, 40)
-                    } else if !viewModel.albums.isEmpty {
-                        // 2列グリッド（画像のみ）
-                        LazyVGrid(columns: [
-                            GridItem(.flexible(), spacing: 12),
-                            GridItem(.flexible(), spacing: 12)
-                        ], spacing: 12) {
-                            ForEach(viewModel.albums) { album in
-                                if let onNavigate = onNavigateToAlbum {
-                                    Button(action: {
-                                        onNavigate(album)
-                                    }) {
-                                        AlbumGridItem(album: album)
-                                    }
-                                    .buttonStyle(.plain)
-                                } else {
-                                    NavigationLink(destination: AlbumDetailView(album: album)) {
-                                        AlbumGridItem(album: album)
-                                    }
+                        // 子ユーザーアルバム
+                        ForEach(viewModel.childUserAlbums) { childAlbum in
+                            Button(action: {
+                                onNavigateToUserAlbum?(childAlbum)
+                            }) {
+                                AlbumCard(
+                                    title: childAlbum.name,
+                                    artistName: childAlbum.artistName,
+                                    colorHex: childAlbum.colorHex
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        // 音楽アルバム
+                        ForEach(viewModel.albums) { album in
+                            if let onNavigate = onNavigateToAlbum {
+                                Button(action: {
+                                    onNavigate(album)
+                                }) {
+                                    AlbumGridItem(album: album)
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                NavigationLink(destination: AlbumDetailView(album: album)) {
+                                    AlbumGridItem(album: album)
                                 }
                             }
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.top, viewModel.childLists.isEmpty && viewModel.childUserAlbums.isEmpty ? 40 : 20)
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 40)
                 }
 
                 Color.clear.frame(height: 120)
