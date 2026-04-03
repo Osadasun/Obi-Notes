@@ -335,10 +335,26 @@ struct MainView: View {
                                 }
                             }
 
-                            // カスタム系のみ削除オプションを表示
+                            // カスタムリスト・ユーザーアルバムのピン留めと削除
                             switch obiPageManager.currentPage {
-                            case .customList, .userAlbum:
-                                Divider()
+                            case .customList(let list):
+                                Button(action: {
+                                    obiListViewModel.togglePin(itemId: "list-\(list.id)")
+                                }) {
+                                    Label(obiListViewModel.isPinned(itemId: "list-\(list.id)") ? "ピン留めを解除" : "ピン留め", systemImage: obiListViewModel.isPinned(itemId: "list-\(list.id)") ? "pin.slash" : "pin")
+                                }
+
+                                Button(role: .destructive, action: {
+                                    showDeleteConfirmation = true
+                                }) {
+                                    Label("削除", systemImage: "trash")
+                                }
+                            case .userAlbum(let album):
+                                Button(action: {
+                                    obiListViewModel.togglePin(itemId: "album-\(album.id)")
+                                }) {
+                                    Label(obiListViewModel.isPinned(itemId: "album-\(album.id)") ? "ピン留めを解除" : "ピン留め", systemImage: obiListViewModel.isPinned(itemId: "album-\(album.id)") ? "pin.slash" : "pin")
+                                }
 
                                 Button(role: .destructive, action: {
                                     showDeleteConfirmation = true
@@ -1047,19 +1063,22 @@ struct CustomListDetailView: View {
     var onNavigateToAlbum: ((Album) -> Void)? = nil
     var onNavigateToList: ((MusicList) -> Void)? = nil
     var onNavigateToUserAlbum: ((UserAlbum) -> Void)? = nil
+    var obiListViewModel: ObiListViewModel? = nil
     @StateObject private var viewModel: CustomListDetailViewModel
     @State private var showingSearchSheet = false
     @State private var editedName: String
     @State private var isEditingName = false
     @FocusState private var isNameFieldFocused: Bool
 
-    init(list: MusicList, onNavigateToAlbum: ((Album) -> Void)? = nil, onNavigateToList: ((MusicList) -> Void)? = nil, onNavigateToUserAlbum: ((UserAlbum) -> Void)? = nil) {
+    init(list: MusicList, onNavigateToAlbum: ((Album) -> Void)? = nil, onNavigateToList: ((MusicList) -> Void)? = nil, onNavigateToUserAlbum: ((UserAlbum) -> Void)? = nil, obiListViewModel: ObiListViewModel? = nil) {
         self.list = list
         self.onNavigateToAlbum = onNavigateToAlbum
         self.onNavigateToList = onNavigateToList
         self.onNavigateToUserAlbum = onNavigateToUserAlbum
+        self.obiListViewModel = obiListViewModel
         self._viewModel = StateObject(wrappedValue: CustomListDetailViewModel(listId: list.id))
         self._editedName = State(initialValue: list.name)
+        print("🔍 CustomListDetailView init - list: \(list.name), obiListViewModel: \(obiListViewModel != nil ? "✅ PRESENT" : "❌ NIL")")
     }
 
     var body: some View {
@@ -1181,18 +1200,11 @@ struct CustomListDetailView: View {
                     }
 
                     Button(action: {
-                        // TODO: 説明編集機能
+                        print("🔘 Pin button tapped - obiListViewModel: \(obiListViewModel != nil ? "✅ PRESENT" : "❌ NIL")")
+                        obiListViewModel?.togglePin(itemId: "list-\(list.id)")
                     }) {
-                        Label("説明を編集", systemImage: "text.alignleft")
+                        Label("ピン留め", systemImage: "pin")
                     }
-
-                    Button(action: {
-                        // TODO: 公開設定機能
-                    }) {
-                        Label("公開設定", systemImage: "eye")
-                    }
-
-                    Divider()
 
                     Button(role: .destructive, action: {
                         // TODO: 削除機能

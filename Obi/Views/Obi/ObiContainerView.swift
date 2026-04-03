@@ -77,7 +77,8 @@ struct ObiContainerView: View, Equatable {
                 },
                 onNavigateToUserAlbum: { childAlbum in
                     pageManager.navigateTo(.userAlbum(childAlbum))
-                }
+                },
+                obiListViewModel: listViewModel
             )
             .navigationBarHidden(true)
 
@@ -92,7 +93,8 @@ struct ObiContainerView: View, Equatable {
                 },
                 onNavigateToUserAlbum: { childAlbum in
                     pageManager.navigateTo(.userAlbum(childAlbum))
-                }
+                },
+                obiListViewModel: listViewModel
             )
             .navigationBarHidden(true)
 

@@ -12,18 +12,21 @@ struct UserAlbumDetailView: View {
     var onNavigateToTrack: ((Track) -> Void)? = nil
     var onNavigateToList: ((MusicList) -> Void)? = nil
     var onNavigateToUserAlbum: ((UserAlbum) -> Void)? = nil
+    var obiListViewModel: ObiListViewModel? = nil
     @StateObject private var viewModel: UserAlbumDetailViewModel
     @State private var editedName: String
     @State private var showingSearchSheet = false
     @FocusState private var isNameFieldFocused: Bool
 
-    init(album: UserAlbum, onNavigateToTrack: ((Track) -> Void)? = nil, onNavigateToList: ((MusicList) -> Void)? = nil, onNavigateToUserAlbum: ((UserAlbum) -> Void)? = nil) {
+    init(album: UserAlbum, onNavigateToTrack: ((Track) -> Void)? = nil, onNavigateToList: ((MusicList) -> Void)? = nil, onNavigateToUserAlbum: ((UserAlbum) -> Void)? = nil, obiListViewModel: ObiListViewModel? = nil) {
         self.album = album
         self.onNavigateToTrack = onNavigateToTrack
         self.onNavigateToList = onNavigateToList
         self.onNavigateToUserAlbum = onNavigateToUserAlbum
+        self.obiListViewModel = obiListViewModel
         self._viewModel = StateObject(wrappedValue: UserAlbumDetailViewModel(albumId: album.id))
         self._editedName = State(initialValue: album.name)
+        print("🔍 UserAlbumDetailView init - album: \(album.name), obiListViewModel: \(obiListViewModel != nil ? "✅ PRESENT" : "❌ NIL")")
     }
 
     var body: some View {
@@ -215,7 +218,12 @@ struct UserAlbumDetailView: View {
                         Label("色を変更", systemImage: "paintpalette")
                     }
 
-                    Divider()
+                    Button(action: {
+                        print("🔘 Pin button tapped - obiListViewModel: \(obiListViewModel != nil ? "✅ PRESENT" : "❌ NIL")")
+                        obiListViewModel?.togglePin(itemId: "album-\(album.id)")
+                    }) {
+                        Label("ピン留め", systemImage: "pin")
+                    }
 
                     Button(role: .destructive, action: {
                         // TODO: 削除機能
