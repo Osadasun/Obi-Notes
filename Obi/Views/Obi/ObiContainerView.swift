@@ -169,62 +169,58 @@ struct ObiCardListView: View {
                         .padding()
                 } else {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], spacing: 20) {
-                        // デフォルトリスト
-                        Button(action: { onNavigate(.defaultList(.reviewed)) }) {
-                            ListCard(
-                                title: "レビュー済み",
-                                count: viewModel.reviewedCount,
-                                artworkURLs: viewModel.reviewedArtworks
-                            )
-                        }
-                        .buttonStyle(.plain)
-
-                        Button(action: { onNavigate(.defaultList(.favorite)) }) {
-                            ListCard(
-                                title: "お気に入り",
-                                count: viewModel.favoriteCount,
-                                artworkURLs: viewModel.favoriteArtworks
-                            )
-                        }
-                        .buttonStyle(.plain)
-
-                        Button(action: { onNavigate(.defaultList(.listened)) }) {
-                            ListCard(
-                                title: "聴いた",
-                                count: viewModel.listenedCount,
-                                artworkURLs: viewModel.listenedArtworks
-                            )
-                        }
-                        .buttonStyle(.plain)
-
-                        Button(action: { onNavigate(.defaultList(.wishlist)) }) {
-                            ListCard(
-                                title: "聴きたい",
-                                count: viewModel.wishlistCount,
-                                artworkURLs: viewModel.wishlistArtworks
-                            )
-                        }
-                        .buttonStyle(.plain)
-
-                        // カスタムリスト + ユーザーアルバム
+                        // デフォルトリスト + カスタムリスト + ユーザーアルバム（最新アクティビティ順）
                         ForEach(viewModel.obiItems) { item in
                             switch item {
-                            case .list(let list):
-                                Button(action: { onNavigate(.customList(list)) }) {
+                            case .list(let list, _):
+                                Button(action: {
+                                    // デフォルトリストの場合は.defaultListで遷移
+                                    if let defaultType = list.defaultType {
+                                        onNavigate(.defaultList(MyListCategory(rawValue: defaultType.rawValue) ?? .listened))
+                                    } else {
+                                        // カスタムリストの場合は.customListで遷移
+                                        onNavigate(.customList(list))
+                                    }
+                                }) {
                                     ListCard(
                                         title: list.name,
                                         count: viewModel.customListCounts[list.id] ?? 0,
-                                        artworkURLs: viewModel.customListArtworks[list.id] ?? []
+                                        artworkURLs: viewModel.customListArtworks[list.id] ?? [],
+                                        isPinned: viewModel.isPinned(itemId: "list-\(list.id)"),
+                                        isDefault: list.defaultType != nil,
+                                        onPinToggle: {
+                                            viewModel.togglePin(itemId: "list-\(list.id)")
+                                        },
+                                        onEdit: list.defaultType == nil ? {
+                                            // TODO: 編集機能を実装
+                                            print("編集: \(list.name)")
+                                        } : nil,
+                                        onDelete: list.defaultType == nil ? {
+                                            // TODO: 削除機能を実装
+                                            print("削除: \(list.name)")
+                                        } : nil
                                     )
                                 }
                                 .buttonStyle(.plain)
 
-                            case .userAlbum(let album):
+                            case .userAlbum(let album, _):
                                 Button(action: { onNavigate(.userAlbum(album)) }) {
                                     AlbumCard(
                                         title: album.name,
                                         artistName: album.artistName,
-                                        colorHex: album.colorHex
+                                        colorHex: album.colorHex,
+                                        isPinned: viewModel.isPinned(itemId: "album-\(album.id)"),
+                                        onPinToggle: {
+                                            viewModel.togglePin(itemId: "album-\(album.id)")
+                                        },
+                                        onEdit: {
+                                            // TODO: 編集機能を実装
+                                            print("編集: \(album.name)")
+                                        },
+                                        onDelete: {
+                                            // TODO: 削除機能を実装
+                                            print("削除: \(album.name)")
+                                        }
                                     )
                                 }
                                 .buttonStyle(.plain)

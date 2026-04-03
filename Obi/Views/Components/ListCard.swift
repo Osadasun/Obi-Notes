@@ -12,17 +12,32 @@ struct ListCard: View {
     let count: Int
     let artworkURLs: [String?]
     let isSelected: Bool
+    let isPinned: Bool
+    let isDefault: Bool
+    let onPinToggle: (() -> Void)?
+    let onEdit: (() -> Void)?
+    let onDelete: (() -> Void)?
 
     init(
         title: String,
         count: Int,
         artworkURLs: [String?] = [],
-        isSelected: Bool = false
+        isSelected: Bool = false,
+        isPinned: Bool = false,
+        isDefault: Bool = false,
+        onPinToggle: (() -> Void)? = nil,
+        onEdit: (() -> Void)? = nil,
+        onDelete: (() -> Void)? = nil
     ) {
         self.title = title
         self.count = count
         self.artworkURLs = artworkURLs
         self.isSelected = isSelected
+        self.isPinned = isPinned
+        self.isDefault = isDefault
+        self.onPinToggle = onPinToggle
+        self.onEdit = onEdit
+        self.onDelete = onDelete
     }
 
     var body: some View {
@@ -66,15 +81,52 @@ struct ListCard: View {
                 .clipped()
 
             // タイトルと件数
-            VStack(spacing: 4) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                Text("\(count)件")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                HStack {
+                    if isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                    }
+
+                    Text("\(count)件")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Spacer()
+
+                    Menu {
+                        Button(action: {
+                            onPinToggle?()
+                        }) {
+                            Label(isPinned ? "ピン留めを解除" : "ピン留め", systemImage: isPinned ? "pin.slash" : "pin")
+                        }
+
+                        if !isDefault {
+                            Button(action: {
+                                onEdit?()
+                            }) {
+                                Label("編集", systemImage: "pencil")
+                            }
+
+                            Button(role: .destructive, action: {
+                                onDelete?()
+                            }) {
+                                Label("削除", systemImage: "trash")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
         }
     }

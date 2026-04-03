@@ -31,24 +31,34 @@ struct UserAlbum: Identifiable, Codable, Equatable, Hashable {
 
 // ObiViewで表示するための統合型
 enum ObiItem: Identifiable, Hashable {
-    case list(MusicList)
-    case userAlbum(UserAlbum)
+    case list(MusicList, latestActivityDate: Date)
+    case userAlbum(UserAlbum, latestActivityDate: Date)
 
     var id: String {
         switch self {
-        case .list(let list):
+        case .list(let list, _):
             return "list-\(list.id)"
-        case .userAlbum(let album):
+        case .userAlbum(let album, _):
             return "album-\(album.id)"
         }
     }
 
     var name: String {
         switch self {
-        case .list(let list):
+        case .list(let list, _):
             return list.name
-        case .userAlbum(let album):
+        case .userAlbum(let album, _):
             return album.name
+        }
+    }
+
+    // ソート用の最新日付（リスト作成日 vs 最新アイテム追加日、アルバム更新日 vs 最新トラック追加日）
+    var latestDate: Date {
+        switch self {
+        case .list(_, let latestActivityDate):
+            return latestActivityDate
+        case .userAlbum(_, let latestActivityDate):
+            return latestActivityDate
         }
     }
 }
