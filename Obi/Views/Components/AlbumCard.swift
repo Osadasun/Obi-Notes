@@ -38,6 +38,7 @@ struct AlbumCard: View {
         self.onEdit = onEdit
         self.onMove = onMove
         self.onDelete = onDelete
+        print("🎨 [AlbumCard] Init - title: \(title), onMove: \(onMove != nil), onEdit: \(onEdit != nil), onDelete: \(onDelete != nil)")
     }
 
     var body: some View {
@@ -100,18 +101,21 @@ struct AlbumCard: View {
 
                     Menu {
                         Button(action: {
+                            print("📌 [AlbumCard] Pin toggle tapped - title: \(title)")
                             onPinToggle?()
                         }) {
                             Label(isPinned ? "ピン留めを解除" : "ピン留め", systemImage: isPinned ? "pin.slash" : "pin")
                         }
 
                         Button(action: {
+                            print("✏️ [AlbumCard] Edit tapped - title: \(title)")
                             onEdit?()
                         }) {
                             Label("編集", systemImage: "pencil")
                         }
 
                         Button(action: {
+                            print("📂 [AlbumCard] Move tapped - title: \(title), onMove: \(onMove != nil)")
                             onMove?()
                         }) {
                             Label("移動", systemImage: "folder")

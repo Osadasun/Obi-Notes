@@ -232,6 +232,7 @@ struct ObiCardListView: View {
                                             print("編集: \(album.name)")
                                         },
                                         onMove: {
+                                            print("📦 [ObiContainerView] AlbumCard onMove called for: \(album.name), onMoveAlbum: \(onMoveAlbum != nil)")
                                             onMoveAlbum?(album.id)
                                         },
                                         onDelete: {

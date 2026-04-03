@@ -18,70 +18,86 @@ struct MoveToListView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    if viewModel.isLoading {
+        let _ = print("🖼️ [MoveToListView] body render - isLoading: \(viewModel.isLoading), lists.count: \(viewModel.lists.count), sortedLists.count: \(viewModel.sortedLists.count)")
+
+        return NavigationStack {
+            ZStack {
+                if viewModel.isLoading {
+                    let _ = print("🖼️ [MoveToListView] Showing ProgressView (isLoading = true)")
+                    VStack {
+                        Spacer()
                         ProgressView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .padding(.top, 100)
-                    } else if viewModel.lists.isEmpty {
-                        ContentUnavailableView(
-                            "移動先がありません",
-                            systemImage: "folder",
-                            description: Text("先にカスタムリストを作成してください")
-                        )
-                        .padding(.top, 100)
-                    } else {
-                        VStack(alignment: .leading, spacing: 16) {
-                            // ルート（親なし）オプション
-                            Button(action: {
-                                viewModel.selectedList = nil
-                            }) {
-                                HStack {
-                                    Image(systemName: viewModel.selectedList == nil ? "checkmark.circle.fill" : "circle")
-                                        .foregroundColor(viewModel.selectedList == nil ? .purple : .gray)
-
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("ルート（トップレベル）")
-                                            .font(.subheadline)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.primary)
-
-                                        Text("Obiタブのトップに表示")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-
-                                    Spacer()
-                                }
-                                .padding()
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(8)
-                            }
-                            .padding(.horizontal, 24)
-
-                            // カスタムリスト
-                            LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], spacing: 20) {
-                                ForEach(viewModel.sortedLists) { list in
+                            .scaleEffect(1.5)
+                        Text("移動先を読み込み中...")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 16)
+                        Spacer()
+                    }
+                } else {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            if viewModel.lists.isEmpty {
+                                let _ = print("🖼️ [MoveToListView] Showing ContentUnavailableView (lists.isEmpty)")
+                                ContentUnavailableView(
+                                    "移動先がありません",
+                                    systemImage: "folder",
+                                    description: Text("先にカスタムリストを作成してください")
+                                )
+                                .padding(.top, 100)
+                            } else {
+                                let _ = print("🖼️ [MoveToListView] Showing content (lists.count = \(viewModel.lists.count), sortedLists.count = \(viewModel.sortedLists.count))")
+                                VStack(alignment: .leading, spacing: 16) {
+                                    // ルート（親なし）オプション
                                     Button(action: {
-                                        viewModel.selectedList = list
+                                        viewModel.selectedList = nil
                                     }) {
-                                        ListCard(
-                                            title: list.name,
-                                            count: 0,
-                                            artworkURLs: [],
-                                            isSelected: viewModel.selectedList?.id == list.id,
-                                            isPinned: viewModel.obiListViewModel?.isPinned(itemId: "list-\(list.id)") ?? false,
-                                            isDefault: false
-                                        )
+                                        HStack {
+                                            Image(systemName: viewModel.selectedList == nil ? "checkmark.circle.fill" : "circle")
+                                                .foregroundColor(viewModel.selectedList == nil ? .purple : .gray)
+
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("ルート（トップレベル）")
+                                                    .font(.subheadline)
+                                                    .fontWeight(.semibold)
+                                                    .foregroundColor(.primary)
+
+                                                Text("Obiタブのトップに表示")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+
+                                            Spacer()
+                                        }
+                                        .padding()
+                                        .background(Color.gray.opacity(0.1))
+                                        .cornerRadius(8)
                                     }
-                                    .buttonStyle(.plain)
+                                    .padding(.horizontal, 24)
+
+                                    // カスタムリスト
+                                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], spacing: 20) {
+                                        ForEach(viewModel.sortedLists) { list in
+                                            Button(action: {
+                                                viewModel.selectedList = list
+                                            }) {
+                                                ListCard(
+                                                    title: list.name,
+                                                    count: 0,
+                                                    artworkURLs: [],
+                                                    isSelected: viewModel.selectedList?.id == list.id,
+                                                    isPinned: viewModel.obiListViewModel?.isPinned(itemId: "list-\(list.id)") ?? false,
+                                                    isDefault: false
+                                                )
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                    .padding(.horizontal, 24)
                                 }
+                                .padding(.top, 24)
                             }
-                            .padding(.horizontal, 24)
                         }
-                        .padding(.top, 24)
                     }
                 }
             }

@@ -62,7 +62,6 @@ struct MainView: View {
     @State private var showDeleteConfirmation = false
 
     // 移動先選択用
-    @State private var showMoveSheet = false
     @State private var moveSourceType: MoveToListViewModel.SourceType?
 
     // UIPageViewControllerの内部余白を計算
@@ -349,8 +348,9 @@ struct MainView: View {
                                 }
 
                                 Button(action: {
+                                    print("📱 [MainView] Move button tapped for list: \(list.id)")
                                     moveSourceType = .list(list.id)
-                                    showMoveSheet = true
+                                    print("📱 [MainView] moveSourceType set to: \(String(describing: moveSourceType))")
                                 }) {
                                     Label("移動", systemImage: "folder")
                                 }
@@ -368,8 +368,9 @@ struct MainView: View {
                                 }
 
                                 Button(action: {
+                                    print("📱 [MainView] Move button tapped for album: \(album.id)")
                                     moveSourceType = .userAlbum(album.id)
-                                    showMoveSheet = true
+                                    print("📱 [MainView] moveSourceType set to: \(String(describing: moveSourceType))")
                                 }) {
                                     Label("移動", systemImage: "folder")
                                 }
@@ -448,12 +449,12 @@ struct MainView: View {
                     pageManager: obiPageManager,
                     listViewModel: obiListViewModel,
                     onMoveList: { listId in
+                        print("📦 [MainView] onMoveList callback - listId: \(listId)")
                         moveSourceType = .list(listId)
-                        showMoveSheet = true
                     },
                     onMoveAlbum: { albumId in
+                        print("📦 [MainView] onMoveAlbum callback - albumId: \(albumId)")
                         moveSourceType = .userAlbum(albumId)
-                        showMoveSheet = true
                     }
                 )
                     .equatable()
@@ -529,12 +530,11 @@ struct MainView: View {
                 Text("削除しますか？")
             }
         }
-        .sheet(isPresented: $showMoveSheet) {
-            if let sourceType = moveSourceType {
-                MoveToListView(sourceType: sourceType, obiListViewModel: obiListViewModel) {
-                    Task {
-                        await obiListViewModel.loadListCounts()
-                    }
+        .sheet(item: $moveSourceType) { sourceType in
+            let _ = print("📱 [MainView] Sheet presenting with sourceType: \(sourceType)")
+            MoveToListView(sourceType: sourceType, obiListViewModel: obiListViewModel) {
+                Task {
+                    await obiListViewModel.loadListCounts()
                 }
             }
         }

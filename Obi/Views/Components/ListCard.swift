@@ -106,6 +106,7 @@ struct ListCard: View {
 
                     Menu {
                         Button(action: {
+                            print("📌 [ListCard] Pin toggle tapped - title: \(title)")
                             onPinToggle?()
                         }) {
                             Label(isPinned ? "ピン留めを解除" : "ピン留め", systemImage: isPinned ? "pin.slash" : "pin")
@@ -113,12 +114,14 @@ struct ListCard: View {
 
                         if !isDefault {
                             Button(action: {
+                                print("✏️ [ListCard] Edit tapped - title: \(title)")
                                 onEdit?()
                             }) {
                                 Label("編集", systemImage: "pencil")
                             }
 
                             Button(action: {
+                                print("📂 [ListCard] Move tapped - title: \(title), onMove: \(onMove != nil)")
                                 onMove?()
                             }) {
                                 Label("移動", systemImage: "folder")
