@@ -12,37 +12,104 @@ struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     @State private var selectedSegment = 0
     @State private var showSignOutAlert = false
+    @State private var isEditingProfile = false
+    @State private var editedDisplayName: String = ""
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
+            ZStack {
+                // マイページ画面
+                if !isEditingProfile {
+                    profileContentView
+                        .transition(.opacity)
+                } else {
+                    // プロフィール編集画面
+                    EditProfileView(viewModel: viewModel, isPresented: $isEditingProfile, editedDisplayName: $editedDisplayName)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: isEditingProfile)
+            .navigationTitle(isEditingProfile ? "プロフィールの編集" : "マイページ")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if isEditingProfile {
+                        Button(action: {
+                            Task {
+                                await viewModel.updateDisplayName(editedDisplayName)
+                                isEditingProfile = false
+                            }
+                        }) {
+                            Text("完了")
+                                .fontWeight(.semibold)
+                        }
+                    } else {
+                        Button(action: {
+                            showSignOutAlert = true
+                        }) {
+                            Image(systemName: "gearshape")
+                        }
+                    }
+                }
+            }
+            .task {
+                await viewModel.loadProfileData()
+            }
+            .onChange(of: viewModel.user) { newUser in
+                // ユーザー情報が読み込まれたら、編集用の名前を初期化
+                if let user = newUser {
+                    editedDisplayName = user.displayName
+                }
+            }
+            .alert("サインアウト", isPresented: $showSignOutAlert) {
+                Button("キャンセル", role: .cancel) {}
+                Button("サインアウト", role: .destructive) {
+                    Task {
+                        await authViewModel.signOut()
+                    }
+                }
+            } message: {
+                Text("本当にサインアウトしますか？")
+            }
+        }
+    }
+
+    // MARK: - Profile Content View
+    private var profileContentView: some View {
+        ScrollView {
+                VStack(spacing: 32) {
                     // プロフィールヘッダー
                     VStack(spacing: 12) {
                         // アイコンとユーザー名
-                        ZStack(alignment: .bottom) {
-                            Circle()
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(width: 140, height: 140)
-                                .overlay(
-                                    Image(systemName: "person.fill")
-                                        .font(.system(size: 60))
-                                        .foregroundColor(.white)
-                                )
+                        Button(action: {
+                            isEditingProfile = true
+                        }) {
+                            ZStack(alignment: .bottom) {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 200, height: 200)
+                                    .overlay(
+                                        Image(systemName: "person.fill")
+                                            .font(.system(size: 80))
+                                            .foregroundColor(.white)
+                                    )
 
-                            // ユーザー名をオーバーレイ
-                            Text(viewModel.user?.displayName ?? "ユーザー名")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.black.opacity(0.5))
-                                )
-                                .offset(y: 10)
+                                // ユーザー名をオーバーレイ
+                                Text(viewModel.user?.displayName ?? "ユーザー名")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.black.opacity(0.5))
+                                    )
+                                    .offset(y: 10)
+                            }
+                            .frame(height: 200)
                         }
+                        .buttonStyle(PlainButtonStyle())
 
                         // 統計
                         HStack(spacing: 32) {
@@ -52,7 +119,8 @@ struct ProfileView: View {
                         }
                         .padding(.top, 8)
                     }
-                    .padding()
+                    .padding(.top, 16)
+                    .padding(.horizontal)
 
                     // セグメントコントロール
                     Picker("Content", selection: $selectedSegment) {
@@ -107,31 +175,6 @@ struct ProfileView: View {
                     }
                 }
             }
-            .navigationTitle("マイページ")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showSignOutAlert = true
-                    }) {
-                        Image(systemName: "gearshape")
-                    }
-                }
-            }
-            .task {
-                await viewModel.loadProfileData()
-            }
-            .alert("サインアウト", isPresented: $showSignOutAlert) {
-                Button("キャンセル", role: .cancel) {}
-                Button("サインアウト", role: .destructive) {
-                    Task {
-                        await authViewModel.signOut()
-                    }
-                }
-            } message: {
-                Text("本当にサインアウトしますか？")
-            }
-        }
     }
 }
 

@@ -26,14 +26,18 @@ class ProfileViewModel: ObservableObject {
 
         do {
             // 現在のユーザーIDを取得
-            guard let currentUserId = await supabaseService.currentUserId else {
+            guard let currentUserId = UserManager.shared.currentUserId else {
+                print("❌ ProfileViewModel: ユーザーIDを取得できませんでした")
                 errorMessage = "ユーザーIDを取得できませんでした"
                 isLoading = false
                 return
             }
 
+            print("✅ ProfileViewModel: ユーザーID取得成功: \(currentUserId)")
+
             // ユーザー情報を取得
             user = try await supabaseService.fetchUser(id: currentUserId)
+            print("✅ ProfileViewModel: ユーザー情報取得成功: \(user?.displayName ?? "N/A")")
 
             // レビューとリストを並行して取得
             async let reviewsResult = supabaseService.fetchMyReviews(userId: currentUserId, limit: 50)
@@ -41,6 +45,8 @@ class ProfileViewModel: ObservableObject {
 
             reviews = try await reviewsResult
             lists = try await listsResult
+
+            print("✅ ProfileViewModel: レビュー数: \(reviews.count), リスト数: \(lists.count)")
 
         } catch {
             print("❌ ProfileViewModel: プロフィールデータの読み込みエラー: \(error)")
@@ -64,5 +70,34 @@ class ProfileViewModel: ObservableObject {
 
     var listCount: Int {
         lists.count
+    }
+
+    // MARK: - Update Profile
+
+    func updateDisplayName(_ newName: String) async {
+        guard let currentUserId = UserManager.shared.currentUserId else {
+            print("❌ ProfileViewModel: ユーザーIDを取得できませんでした")
+            return
+        }
+
+        guard var updatedUser = user else {
+            print("❌ ProfileViewModel: ユーザー情報がありません")
+            return
+        }
+
+        do {
+            // ユーザー情報を更新
+            updatedUser.displayName = newName
+            try await supabaseService.updateUserProfile(updatedUser)
+
+            // ローカルのユーザー情報も更新
+            user = updatedUser
+            UserManager.shared.updateDisplayName(newName)
+
+            print("✅ ProfileViewModel: ユーザー名更新成功: \(newName)")
+        } catch {
+            print("❌ ProfileViewModel: ユーザー名更新エラー: \(error)")
+            errorMessage = "ユーザー名の更新に失敗しました"
+        }
     }
 }
